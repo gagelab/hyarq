@@ -1,0 +1,58 @@
+# Snakemake
+.snakemake/
+*.snakemake.log
+
+# Results and generated outputs
+results/
+logs/
+benchmarks/
+resources/references/*/star_index/
+
+# Large sequencing/alignment files
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.bai
+*.sam
+*.cram
+*.crai
+
+# Reference/index/generated files
+*.fai
+*.dict
+*.idx
+*.bt2
+*.ebwt
+SA
+SAindex
+Genome
+genomeParameters.txt
+sjdbList.*
+chrName.*
+chrLength.txt
+chrStart.txt
+exonGeTrInfo.tab
+exonInfo.tab
+geneInfo.tab
+sjdbInfo.txt
+transcriptInfo.tab
+
+# Temp/cache
+tmp/
+temp/
+*_tmp/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# R/Python/session files
+.Rhistory
+.RData
+.DS_Store
+
+# Conda/envs
+.conda/
+.mamba/
+envs/
