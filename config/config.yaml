@@ -1,0 +1,19 @@
+# HyARQ configuration file.
+# This is a placeholder and will be expanded during workflow development.
+
+run_name: example_run
+reference_id: example_reference
+
+parents:
+  parent1:
+    name: ""
+    prefix: ""
+    fasta: ""
+    gtf: ""
+  parent2:
+    name: ""
+    prefix: ""
+    fasta: ""
+    gtf: ""
+
+samples: "config/samples.tsv"

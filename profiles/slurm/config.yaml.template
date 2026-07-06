@@ -1,0 +1,8 @@
+# SLURM profile template for HyARQ.
+# Cluster-specific settings should be filled in locally and reviewed before use.
+
+jobs: 50
+latency-wait: 60
+rerun-incomplete: true
+printshellcmds: true
+use-conda: true

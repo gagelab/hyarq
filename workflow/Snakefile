@@ -1,0 +1,17 @@
+# HyARQ Snakemake workflow
+# Main workflow entry point.
+
+configfile: "config/config.yaml"
+
+include: "workflow/rules/common.smk"
+include: "workflow/rules/reference.smk"
+include: "workflow/rules/preprocessing.smk"
+include: "workflow/rules/rna.smk"
+include: "workflow/rules/atac.smk"
+include: "workflow/rules/chip.smk"
+include: "workflow/rules/moa.smk"
+include: "workflow/rules/reports.smk"
+
+rule all:
+    input:
+        []

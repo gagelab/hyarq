@@ -55,4 +55,4 @@ __pycache__/
 # Conda/envs
 .conda/
 .mamba/
-envs/
+/envs/
