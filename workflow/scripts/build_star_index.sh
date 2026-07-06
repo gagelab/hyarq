@@ -2,10 +2,10 @@
 # build_star_index.sh
 # Build a STAR genome index for the concatenated hybrid reference.
 #
-# One index is built for ALL assays. It includes the annotation (GTF) so that
-# splice junctions are available for RNA-seq; assays that must not use introns
-# (ATAC/MOA/ChIP) disable them at MAPPING time with --alignIntronMax 1, so the
-# same index serves every assay.
+# One index is built for all assays. It includes the annotation (GTF) so RNA
+# mapping can use splice junctions; DNA-style assays such as ATAC, ChIP, and
+# MOA disable introns at mapping time with --alignIntronMax 1. The same STAR
+# index therefore serves every assay.
 #
 # --genomeSAindexNbases must be scaled to genome length. STAR's rule is
 #   min(14, floor(log2(genomeLength)/2 - 1))
@@ -13,18 +13,18 @@
 # default cap of 14. We compute it automatically from the .fai.
 #
 # Inputs:
-#   results/reference/concatenated.fa   (+ .fai, created if missing)
-#   results/reference/concatenated.gtf
+#   REF_FA   concatenated FASTA (+ .fai, created if missing)
+#   REF_GTF  concatenated GTF
 # Output:
-#   results/star_index/
+#   INDEX_DIR/
 #
 # Requires: STAR, samtools, awk
-# Run from the project directory (where results/reference/ lives).
 
 set -euo pipefail
 
 STAR_BIN=${STAR_BIN:-STAR}
 SAMTOOLS=${SAMTOOLS:-samtools}
+REFERENCE_ID=${REFERENCE_ID:-}
 
 for cmd in "$STAR_BIN" "$SAMTOOLS" awk; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -33,11 +33,18 @@ for cmd in "$STAR_BIN" "$SAMTOOLS" awk; do
     fi
 done
 
-REF_FA=${REF_FA:-results/reference/concatenated.fa}
-REF_GTF=${REF_GTF:-results/reference/concatenated.gtf}
-INDEX_DIR=${INDEX_DIR:-results/star_index}
+if [ -n "$REFERENCE_ID" ]; then
+    REF_FA=${REF_FA:-resources/references/${REFERENCE_ID}/concatenated.fa}
+    REF_GTF=${REF_GTF:-resources/references/${REFERENCE_ID}/concatenated.gtf}
+    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
+else
+    REF_FA=${REF_FA:-results/reference/concatenated.fa}
+    REF_GTF=${REF_GTF:-results/reference/concatenated.gtf}
+    INDEX_DIR=${INDEX_DIR:-results/star_index}
+fi
 THREADS=${THREADS:-4}
 SJDB_OVERHANG=${SJDB_OVERHANG:-149}   # readLength - 1 (150 bp reads)
+REPORT="${INDEX_DIR%/}/star_index_build_report.tsv"
 
 for f in "$REF_FA" "$REF_GTF"; do
     [ -f "$f" ] || { echo "ERROR: input not found: $f" >&2; exit 1; }
@@ -69,7 +76,21 @@ echo "[$(date)] Building STAR index..."
     --sjdbOverhang "$SJDB_OVERHANG" \
     --genomeSAindexNbases "$SA_NBASES"
 
+{
+    echo -e "metric\tvalue"
+    echo -e "reference_id\t${REFERENCE_ID}"
+    echo -e "ref_fasta\t${REF_FA}"
+    echo -e "ref_gtf\t${REF_GTF}"
+    echo -e "index_dir\t${INDEX_DIR}"
+    echo -e "genome_length\t${GENOME_LEN}"
+    echo -e "genomeSAindexNbases\t${SA_NBASES}"
+    echo -e "sjdbOverhang\t${SJDB_OVERHANG}"
+    echo -e "threads\t${THREADS}"
+    echo -e "star_bin\t${STAR_BIN}"
+} > "$REPORT"
+
 echo ""
 echo "[$(date)] STAR index built in ${INDEX_DIR}/"
+echo "  Report: $REPORT"
 echo "Index contents:"
 ls -1 "$INDEX_DIR" | sed 's/^/  /'
