@@ -10,7 +10,7 @@
 #   READS_DIR=/cleaned/fastqs LIBRARY_ID=rna_rep1
 # derives R1=$READS_DIR/${LIBRARY_ID}_R1.fq.gz and R2=..._R2.fq.gz.
 #
-# Outputs (OUTDIR, default results/mapping/rna):
+# Outputs:
 #   ${LIBRARY_ID}.Aligned.sortedByCoord.out.bam (+ .bai)
 #   ${LIBRARY_ID}.ReadsPerGene.out.tab
 #   ${LIBRARY_ID}.Log.final.out
@@ -18,6 +18,8 @@
 #
 # RNA uses STAR spliced-alignment settings and keeps only uniquely mapped reads
 # at the mapping stage. DNA-style assays disable introns in their own scripts.
+# STAR ReadsPerGene.out.tab is a mapping-level cross-check only; final HyARQ
+# allele-specific gene counts are produced later by count_rna_genes.sh.
 
 set -euo pipefail
 
@@ -44,8 +46,18 @@ done
 REP=${REP:-1}
 SAMPLE=${SAMPLE:-rna}
 LIBRARY_ID=${LIBRARY_ID:-${SAMPLE}_rep${REP}}
-INDEX_DIR=${INDEX_DIR:-results/star_index}
-OUTDIR=${OUTDIR:-results/mapping/rna}
+RUN_NAME=${RUN_NAME:-}
+REFERENCE_ID=${REFERENCE_ID:-}
+if [ -n "$REFERENCE_ID" ]; then
+    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
+else
+    INDEX_DIR=${INDEX_DIR:-results/star_index}
+fi
+if [ -n "$RUN_NAME" ]; then
+    OUTDIR=${OUTDIR:-results/${RUN_NAME}/rna/${LIBRARY_ID}/mapping}
+else
+    OUTDIR=${OUTDIR:-results/mapping/rna}
+fi
 THREADS=${THREADS:-4}
 R1=${R1:-}
 R2=${R2:-}
@@ -106,6 +118,8 @@ echo "  prefix = $PREFIX"
 alignment_records=$("$SAMTOOLS" view -c "$BAM")
 {
     echo -e "metric\tvalue"
+    echo -e "run_name\t${RUN_NAME}"
+    echo -e "reference_id\t${REFERENCE_ID}"
     echo -e "assay\trna"
     echo -e "sample\t${SAMPLE}"
     echo -e "rep\t${REP}"
