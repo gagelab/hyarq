@@ -1,30 +1,17 @@
 #!/bin/bash
 # build_star_index.sh
-# Build a STAR genome index for the concatenated hybrid reference.
+# Build a STAR genome index for the concatenated reference.
 #
-# One index is built for all assays. It includes the annotation (GTF) so RNA
-# mapping can use splice junctions; DNA-style assays such as ATAC, ChIP, and
-# MOA disable introns at mapping time with --alignIntronMax 1. The same STAR
-# index therefore serves every assay.
-#
-# --genomeSAindexNbases must be scaled to genome length. STAR's rule is
-#   min(14, floor(log2(genomeLength)/2 - 1))
-# Small references need lower values, while large plant genomes usually use the
-# default cap of 14. We compute it automatically from the .fai.
-#
-# Inputs:
-#   REF_FA   concatenated FASTA (+ .fai, created if missing)
-#   REF_GTF  concatenated GTF
-# Output:
-#   INDEX_DIR/
-#
-# Requires: STAR, samtools, awk
+# Required: REFERENCE_ID matching the reference directory created by
+# build_concatenated_reference.sh.
+# Output: resources/references/${REFERENCE_ID}/star_index/
+# genomeSAindexNbases is calculated automatically because STAR scales it to
+# genome length.
 
 set -euo pipefail
 
 STAR_BIN=${STAR_BIN:-STAR}
 SAMTOOLS=${SAMTOOLS:-samtools}
-REFERENCE_ID=${REFERENCE_ID:-}
 
 for cmd in "$STAR_BIN" "$SAMTOOLS" awk; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -33,15 +20,14 @@ for cmd in "$STAR_BIN" "$SAMTOOLS" awk; do
     fi
 done
 
-if [ -n "$REFERENCE_ID" ]; then
-    REF_FA=${REF_FA:-resources/references/${REFERENCE_ID}/concatenated.fa}
-    REF_GTF=${REF_GTF:-resources/references/${REFERENCE_ID}/concatenated.gtf}
-    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
-else
-    REF_FA=${REF_FA:-results/reference/concatenated.fa}
-    REF_GTF=${REF_GTF:-results/reference/concatenated.gtf}
-    INDEX_DIR=${INDEX_DIR:-results/star_index}
+if [ -z "${REFERENCE_ID:-}" ]; then
+    echo "ERROR: REFERENCE_ID is required and must match the reference directory created by build_concatenated_reference.sh." >&2
+    echo "       Usual naming convention: <PARENT1_PREFIX>_<PARENT2_PREFIX> (example: B73_Mo17)" >&2
+    exit 1
 fi
+REF_FA=${REF_FA:-resources/references/${REFERENCE_ID}/concatenated.fa}
+REF_GTF=${REF_GTF:-resources/references/${REFERENCE_ID}/concatenated.gtf}
+INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
 THREADS=${THREADS:-4}
 SJDB_OVERHANG=${SJDB_OVERHANG:-149}   # readLength - 1 (150 bp reads)
 REPORT="${INDEX_DIR%/}/star_index_build_report.tsv"
