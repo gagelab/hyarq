@@ -1,9 +1,4 @@
 #!/bin/bash
-# Build the concatenated dual-genome reference: prefix each parent's contigs with a
-# parental name (chr1 -> B73_chr1 / Mo17_chr1), then concatenate both assemblies and
-# both GTFs into one reference. GTF seqnames are prefixed to match; gene_id/transcript_id
-# are left unchanged so paired-feature tables keep matching. Handles .gz inputs.
-
 set -euo pipefail
 
 # ":?" errors on unset OR empty
@@ -13,7 +8,8 @@ PARENT1_GTF=${PARENT1_GTF:?set PARENT1_GTF}
 PARENT2_GTF=${PARENT2_GTF:?set PARENT2_GTF}
 PARENT1_PREFIX=${PARENT1_PREFIX:?set PARENT1_PREFIX}
 PARENT2_PREFIX=${PARENT2_PREFIX:?set PARENT2_PREFIX}
-OUTDIR=${OUTDIR:-resources/references/${PARENT1_PREFIX}_${PARENT2_PREFIX}}
+REFERENCE_ID=${REFERENCE_ID:-${PARENT1_PREFIX}_${PARENT2_PREFIX}}
+OUTDIR=${OUTDIR:-resources/references/${REFERENCE_ID}}
 
 # identical prefixes would re-create the contig collision the design avoids
 [ "$PARENT1_PREFIX" != "$PARENT2_PREFIX" ] || {
@@ -48,6 +44,7 @@ sum_bp()        { awk -v p="$1" 'index($1,p)==1{s+=$2} END{print s+0}' "$FA.fai"
 
 {
     echo -e "metric\tvalue"
+    echo -e "reference_id\t$REFERENCE_ID"
     echo -e "parent1_prefix\t$PARENT1_PREFIX"
     echo -e "parent2_prefix\t$PARENT2_PREFIX"
     echo -e "parent1_contigs\t$(count_contigs "$P1")"
