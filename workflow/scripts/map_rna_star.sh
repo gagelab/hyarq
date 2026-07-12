@@ -1,14 +1,8 @@
 #!/bin/bash
 # map_rna_star.sh
-# Map one cleaned paired-end RNA-seq library to the concatenated hybrid
-# reference with STAR.
+# Map one cleaned paired-end RNA-seq library with STAR.
 #
-# Required input:
-#   R1=/path/to/cleaned_R1.fastq.gz R2=/path/to/cleaned_R2.fastq.gz
-#
-# Optional convenience:
-#   READS_DIR=/cleaned/fastqs LIBRARY_ID=rna_rep1
-# derives R1=$READS_DIR/${LIBRARY_ID}_R1.fq.gz and R2=..._R2.fq.gz.
+# Required: R1, R2, and REFERENCE_ID.
 #
 # Outputs:
 #   ${LIBRARY_ID}.Aligned.sortedByCoord.out.bam (+ .bai)
@@ -16,10 +10,7 @@
 #   ${LIBRARY_ID}.Log.final.out
 #   ${LIBRARY_ID}.mapping_summary.tsv
 #
-# RNA uses STAR spliced-alignment settings and keeps only uniquely mapped reads
-# at the mapping stage. DNA-style assays disable introns in their own scripts.
-# STAR ReadsPerGene.out.tab is a mapping-level cross-check only; final HyARQ
-# allele-specific gene counts are produced later by count_rna_genes.sh.
+# Final paired parental gene counts are generated later by count_rna_genes.sh.
 
 set -euo pipefail
 
@@ -46,18 +37,11 @@ done
 REP=${REP:-1}
 SAMPLE=${SAMPLE:-rna}
 LIBRARY_ID=${LIBRARY_ID:-${SAMPLE}_rep${REP}}
-RUN_NAME=${RUN_NAME:-}
-REFERENCE_ID=${REFERENCE_ID:-}
-if [ -n "$REFERENCE_ID" ]; then
-    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
-else
-    INDEX_DIR=${INDEX_DIR:-results/star_index}
+if [ -z "${REFERENCE_ID:-}" ]; then
+    die "REFERENCE_ID is required and must match the reference directory used by build_star_index.sh. Usual naming convention: <PARENT1_PREFIX>_<PARENT2_PREFIX> (example: B73_Mo17)"
 fi
-if [ -n "$RUN_NAME" ]; then
-    OUTDIR=${OUTDIR:-results/${RUN_NAME}/rna/${LIBRARY_ID}/mapping}
-else
-    OUTDIR=${OUTDIR:-results/mapping/rna}
-fi
+INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
+OUTDIR=${OUTDIR:-results/mapping/rna}
 THREADS=${THREADS:-4}
 R1=${R1:-}
 R2=${R2:-}
@@ -109,7 +93,6 @@ echo "  prefix = $PREFIX"
     --outFilterType BySJout \
     --quantMode GeneCounts \
     --outSAMtype BAM SortedByCoordinate \
-    --outBAMsortingBinsN 5 \
     --outFileNamePrefix "$PREFIX"
 
 [ -s "$BAM" ] || die "STAR produced no BAM for ${LIBRARY_ID}"
@@ -118,7 +101,6 @@ echo "  prefix = $PREFIX"
 alignment_records=$("$SAMTOOLS" view -c "$BAM")
 {
     echo -e "metric\tvalue"
-    echo -e "run_name\t${RUN_NAME}"
     echo -e "reference_id\t${REFERENCE_ID}"
     echo -e "assay\trna"
     echo -e "sample\t${SAMPLE}"
