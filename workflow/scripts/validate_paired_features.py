@@ -58,6 +58,19 @@ def validate_gene_pairs(path, errors):
         errors.append(f"{path}: no data rows")
         return 0
     check_no_blanks(rows, GENE_HEADER, path, errors)
+    for col in GENE_HEADER:
+        seen = set()
+        duplicates = set()
+        for row in rows:
+            gene_id = row[col]
+            if not gene_id.strip():
+                continue
+            if gene_id in seen:
+                duplicates.add(gene_id)
+            else:
+                seen.add(gene_id)
+        for gene_id in sorted(duplicates):
+            errors.append(f"{path}: duplicate {col}: {gene_id}")
     return len(rows)
 
 
