@@ -1,11 +1,13 @@
 #!/bin/bash
 # count_rna_genes.sh
-# Count RNA-seq fragments over paired P1/P2 genes on the concatenated reference.
+# Count RNA-seq fragments over paired parent1/parent2 genes on the concatenated reference.
 #
 # Required inputs:
 #   BAM          coordinate-sorted STAR BAM for one RNA library
-#   GTF          concatenated annotation on prefixed P1/P2 contigs
-#   GENE_PAIRS   TSV pairing P1 and P2 gene IDs
+#   GTF          concatenated annotation on prefixed parental contigs
+#   GENE_PAIRS   TSV pairing parent1 and parent2 gene IDs
+#   PARENT1_PREFIX  contig prefix for parent1, provided as an environment variable
+#   PARENT2_PREFIX  contig prefix for parent2, provided as an environment variable
 #
 # Outputs (OUTDIR, default results/counts/rna/${LIBRARY_ID}):
 #   gene_counts.tsv
@@ -44,18 +46,23 @@ GTF=${GTF:-results/reference/concatenated.gtf}
 GENE_PAIRS=${GENE_PAIRS:-gene_pairs.tsv}
 OUTDIR=${OUTDIR:-results/counts/rna/${LIBRARY_ID}}
 COUNT_TMPDIR=${COUNT_TMPDIR:-${RNA_TMPDIR:-rna_count_tmp/${LIBRARY_ID}}}
-P1_PREFIX=${P1_PREFIX:-P1_}
-P2_PREFIX=${P2_PREFIX:-P2_}
 THREADS=${THREADS:-4}
 MAPQ_MIN=${MAPQ_MIN:-255}
 FEATURE_TYPE=${FEATURE_TYPE:-exon}
 GROUP_ATTR=${GROUP_ATTR:-gene_id}
 STRANDNESS=${STRANDNESS:-0}
 
+[ -n "${PARENT1_PREFIX:-}" ] || die "required environment variable not set: PARENT1_PREFIX"
+[ -n "${PARENT2_PREFIX:-}" ] || die "required environment variable not set: PARENT2_PREFIX"
+PARENT1_CONTIG_PREFIX="${PARENT1_PREFIX}_"
+PARENT2_CONTIG_PREFIX="${PARENT2_PREFIX}_"
+
 log "RNA gene counting: ${LIBRARY_ID}"
 echo "  BAM        = $BAM"
 echo "  GTF        = $GTF"
 echo "  GENE_PAIRS = $GENE_PAIRS"
+echo "  PARENT1_PREFIX = $PARENT1_PREFIX"
+echo "  PARENT2_PREFIX = $PARENT2_PREFIX"
 echo "  OUTDIR     = $OUTDIR"
 
 for f in "$BAM" "$GTF" "$GENE_PAIRS"; do
@@ -67,10 +74,10 @@ mkdir -p "$OUTDIR" "$COUNT_TMPDIR"
 log "Checking GTF feature type and parent contig prefixes"
 n_features=$(awk -F'\t' -v t="$FEATURE_TYPE" '$3==t' "$GTF" | wc -l | tr -d ' ')
 [ "$n_features" -gt 0 ] || die "no '${FEATURE_TYPE}' features in $GTF"
-n_p1_features=$(awk -F'\t' -v p="$P1_PREFIX" -v t="$FEATURE_TYPE" '$3==t && index($1,p)==1' "$GTF" | wc -l | tr -d ' ')
-n_p2_features=$(awk -F'\t' -v p="$P2_PREFIX" -v t="$FEATURE_TYPE" '$3==t && index($1,p)==1' "$GTF" | wc -l | tr -d ' ')
-[ "$n_p1_features" -gt 0 ] || die "no '${FEATURE_TYPE}' features on ${P1_PREFIX} contigs in $GTF"
-[ "$n_p2_features" -gt 0 ] || die "no '${FEATURE_TYPE}' features on ${P2_PREFIX} contigs in $GTF"
+n_parent1_features=$(awk -F'\t' -v p="$PARENT1_CONTIG_PREFIX" -v t="$FEATURE_TYPE" '$3==t && index($1,p)==1' "$GTF" | wc -l | tr -d ' ')
+n_parent2_features=$(awk -F'\t' -v p="$PARENT2_CONTIG_PREFIX" -v t="$FEATURE_TYPE" '$3==t && index($1,p)==1' "$GTF" | wc -l | tr -d ' ')
+[ "$n_parent1_features" -gt 0 ] || die "no '${FEATURE_TYPE}' features on parent1 contigs with prefix ${PARENT1_CONTIG_PREFIX} in $GTF"
+[ "$n_parent2_features" -gt 0 ] || die "no '${FEATURE_TYPE}' features on parent2 contigs with prefix ${PARENT2_CONTIG_PREFIX} in $GTF"
 
 log "Filtering BAM to unique, properly paired, primary alignments"
 TOTAL_BAM_RECORDS=$("$SAMTOOLS" view -c "$BAM")
@@ -83,13 +90,14 @@ log "Name-sorting filtered BAM for read-pair classification"
     "$COUNT_TMPDIR/filtered.bam"
 
 log "Classifying read pairs by same-haplotype concordance"
+: > "$COUNT_TMPDIR/keep_names.txt"
 "$SAMTOOLS" view "$COUNT_TMPDIR/filtered.namesorted.bam" \
-    | awk -v p1="$P1_PREFIX" -v p2="$P2_PREFIX" \
+    | awk -v parent1_prefix="$PARENT1_CONTIG_PREFIX" -v parent2_prefix="$PARENT2_CONTIG_PREFIX" \
           -v keep="$COUNT_TMPDIR/keep_names.txt" \
           -v counts="$COUNT_TMPDIR/filter_counts.tsv" '
     function haplo(contig) {
-        if (index(contig, p1) == 1) return "P1"
-        if (index(contig, p2) == 1) return "P2"
+        if (index(contig, parent1_prefix) == 1) return "parent1"
+        if (index(contig, parent2_prefix) == 1) return "parent2"
         return "NA"
     }
     function flush(name, n, h1, h2,    hap) {
@@ -99,7 +107,7 @@ log "Classifying read pairs by same-haplotype concordance"
         if (h1 != h2) { cross++; return }
         hap = h1
         same++
-        if (hap == "P1") p1f++; else p2f++
+        if (hap == "parent1") parent1f++; else parent2f++
         print name >> keep
     }
     {
@@ -123,8 +131,8 @@ log "Classifying read pairs by same-haplotype concordance"
         print "cross_haplotype_pairs_excluded\t" cross+0 >> counts
         print "unknown_haplotype_pairs_excluded\t" unknown+0 >> counts
         print "non_two_record_groups_excluded\t" nontwo+0 >> counts
-        print "P1_fragments\t" p1f+0 >> counts
-        print "P2_fragments\t" p2f+0 >> counts
+        print "parent1_fragments\t" parent1f+0 >> counts
+        print "parent2_fragments\t" parent2f+0 >> counts
     }'
 
 [ -s "$COUNT_TMPDIR/keep_names.txt" ] || {
@@ -141,34 +149,34 @@ log "Extracting same-haplotype pairs"
 
 log "Splitting concordant BAM by parent prefix"
 "$SAMTOOLS" view -h "$COUNT_TMPDIR/concordant.sorted.bam" \
-    | awk -v p="$P1_PREFIX" 'BEGIN { OFS="\t" } /^@/ { print; next } index($3, p) == 1 { print }' \
-    | "$SAMTOOLS" view -b -o "$COUNT_TMPDIR/P1.bam" -
+    | awk -v p="$PARENT1_CONTIG_PREFIX" 'BEGIN { OFS="\t" } /^@/ { print; next } index($3, p) == 1 { print }' \
+    | "$SAMTOOLS" view -b -o "$COUNT_TMPDIR/parent1.bam" -
 "$SAMTOOLS" view -h "$COUNT_TMPDIR/concordant.sorted.bam" \
-    | awk -v p="$P2_PREFIX" 'BEGIN { OFS="\t" } /^@/ { print; next } index($3, p) == 1 { print }' \
-    | "$SAMTOOLS" view -b -o "$COUNT_TMPDIR/P2.bam" -
+    | awk -v p="$PARENT2_CONTIG_PREFIX" 'BEGIN { OFS="\t" } /^@/ { print; next } index($3, p) == 1 { print }' \
+    | "$SAMTOOLS" view -b -o "$COUNT_TMPDIR/parent2.bam" -
 
-[ "$("$SAMTOOLS" view -c "$COUNT_TMPDIR/P1.bam")" -gt 0 ] || die "no P1 alignments after prefix split"
-[ "$("$SAMTOOLS" view -c "$COUNT_TMPDIR/P2.bam")" -gt 0 ] || die "no P2 alignments after prefix split"
+[ "$("$SAMTOOLS" view -c "$COUNT_TMPDIR/parent1.bam")" -gt 0 ] || die "no parent1 alignments after prefix split"
+[ "$("$SAMTOOLS" view -c "$COUNT_TMPDIR/parent2.bam")" -gt 0 ] || die "no parent2 alignments after prefix split"
 
 log "Counting genes per haplotype with featureCounts"
 "$FEATURECOUNTS" -T "$THREADS" -p --countReadPairs -B -C -s "$STRANDNESS" \
     -t "$FEATURE_TYPE" -g "$GROUP_ATTR" \
-    -a "$GTF" -o "$COUNT_TMPDIR/P1_counts.txt" "$COUNT_TMPDIR/P1.bam" \
-    > "$COUNT_TMPDIR/featureCounts.P1.log" 2>&1
+    -a "$GTF" -o "$COUNT_TMPDIR/parent1_counts.txt" "$COUNT_TMPDIR/parent1.bam" \
+    > "$COUNT_TMPDIR/featureCounts.parent1.log" 2>&1
 "$FEATURECOUNTS" -T "$THREADS" -p --countReadPairs -B -C -s "$STRANDNESS" \
     -t "$FEATURE_TYPE" -g "$GROUP_ATTR" \
-    -a "$GTF" -o "$COUNT_TMPDIR/P2_counts.txt" "$COUNT_TMPDIR/P2.bam" \
-    > "$COUNT_TMPDIR/featureCounts.P2.log" 2>&1
-[ -s "$COUNT_TMPDIR/P1_counts.txt" ] || die "featureCounts produced no P1 output; see $COUNT_TMPDIR/featureCounts.P1.log"
-[ -s "$COUNT_TMPDIR/P2_counts.txt" ] || die "featureCounts produced no P2 output; see $COUNT_TMPDIR/featureCounts.P2.log"
+    -a "$GTF" -o "$COUNT_TMPDIR/parent2_counts.txt" "$COUNT_TMPDIR/parent2.bam" \
+    > "$COUNT_TMPDIR/featureCounts.parent2.log" 2>&1
+[ -s "$COUNT_TMPDIR/parent1_counts.txt" ] || die "featureCounts produced no parent1 output; see $COUNT_TMPDIR/featureCounts.parent1.log"
+[ -s "$COUNT_TMPDIR/parent2_counts.txt" ] || die "featureCounts produced no parent2 output; see $COUNT_TMPDIR/featureCounts.parent2.log"
 
-log "Pairing P1/P2 gene counts"
-python3 - "$COUNT_TMPDIR/P1_counts.txt" "$COUNT_TMPDIR/P2_counts.txt" \
+log "Pairing parent1/parent2 gene counts"
+python3 - "$COUNT_TMPDIR/parent1_counts.txt" "$COUNT_TMPDIR/parent2_counts.txt" \
           "$GENE_PAIRS" "$OUTDIR/gene_counts.tsv" <<'PYEOF'
 import csv
 import sys
 
-p1_counts_path, p2_counts_path, pairs_path, output_path = sys.argv[1:5]
+parent1_counts_path, parent2_counts_path, pairs_path, output_path = sys.argv[1:5]
 
 
 def load_featurecounts(path):
@@ -192,45 +200,37 @@ def load_featurecounts(path):
     return counts
 
 
-def choose_column(header, candidates, path):
-    for candidate in candidates:
-        if candidate in header:
-            return candidate
-    raise SystemExit(
-        f"ERROR: missing required column in {path}; expected one of: {', '.join(candidates)}"
-    )
-
-
-p1_counts = load_featurecounts(p1_counts_path)
-p2_counts = load_featurecounts(p2_counts_path)
+parent1_counts = load_featurecounts(parent1_counts_path)
+parent2_counts = load_featurecounts(parent2_counts_path)
 
 with open(pairs_path, newline="") as source:
-    reader = csv.DictReader(source, delimiter="\t")
-    if reader.fieldnames is None:
+    reader = csv.reader(source, delimiter="\t")
+    try:
+        header = next(reader)
+    except StopIteration:
         raise SystemExit(f"ERROR: missing header in {pairs_path}")
-    id_col = choose_column(reader.fieldnames, ("gene_pair_id", "pair_id", "gene_id"), pairs_path)
-    p1_col = choose_column(reader.fieldnames, ("P1_gene_id", "P1_gene", "P1_feature"), pairs_path)
-    p2_col = choose_column(reader.fieldnames, ("P2_gene_id", "P2_gene", "P2_feature"), pairs_path)
+    expected_header = ["parent1_gene_id", "parent2_gene_id"]
+    expected_header_text = "\t".join(expected_header)
+    if header != expected_header:
+        raise SystemExit(
+            f"ERROR: {pairs_path} header must be exactly: {expected_header_text}"
+        )
     rows = list(reader)
 
-seen_ids = set()
 with open(output_path, "w", newline="") as output:
     writer = csv.writer(output, delimiter="\t", lineterminator="\n")
-    writer.writerow(("gene_pair_id", "P1_gene_id", "P2_gene_id", "P1_count", "P2_count", "total_count"))
-    for row in rows:
-        pair_id = row[id_col]
-        p1_gene = row[p1_col]
-        p2_gene = row[p2_col]
-        if not pair_id or pair_id in seen_ids:
-            raise SystemExit(f"ERROR: blank or duplicate gene pair ID in {pairs_path}: {pair_id!r}")
-        if p1_gene not in p1_counts:
-            raise SystemExit(f"ERROR: P1 gene absent from featureCounts output: {p1_gene}")
-        if p2_gene not in p2_counts:
-            raise SystemExit(f"ERROR: P2 gene absent from featureCounts output: {p2_gene}")
-        seen_ids.add(pair_id)
-        p1_count = p1_counts[p1_gene]
-        p2_count = p2_counts[p2_gene]
-        writer.writerow((pair_id, p1_gene, p2_gene, p1_count, p2_count, p1_count + p2_count))
+    writer.writerow(("parent1_gene_id", "parent2_gene_id", "parent1_count", "parent2_count", "total_count"))
+    for line_number, row in enumerate(rows, start=2):
+        if len(row) != 2:
+            raise SystemExit(f"ERROR: expected two columns in {pairs_path}:{line_number}")
+        parent1_gene, parent2_gene = row
+        if parent1_gene not in parent1_counts:
+            raise SystemExit(f"ERROR: parent1 gene absent from featureCounts output: {parent1_gene}")
+        if parent2_gene not in parent2_counts:
+            raise SystemExit(f"ERROR: parent2 gene absent from featureCounts output: {parent2_gene}")
+        parent1_count = parent1_counts[parent1_gene]
+        parent2_count = parent2_counts[parent2_gene]
+        writer.writerow((parent1_gene, parent2_gene, parent1_count, parent2_count, parent1_count + parent2_count))
 PYEOF
 
 {
@@ -246,8 +246,8 @@ PYEOF
     echo -e "strandness\t${STRANDNESS}"
     echo -e "feature_type\t${FEATURE_TYPE}"
     echo -e "group_attr\t${GROUP_ATTR}"
-    echo -e "p1_prefix\t${P1_PREFIX}"
-    echo -e "p2_prefix\t${P2_PREFIX}"
+    echo -e "parent1_prefix\t${PARENT1_PREFIX}"
+    echo -e "parent2_prefix\t${PARENT2_PREFIX}"
     echo -e "total_bam_records\t${TOTAL_BAM_RECORDS}"
     echo -e "kept_after_filter_records\t${FILTERED_RECORDS}"
     cat "$COUNT_TMPDIR/filter_counts.tsv"
