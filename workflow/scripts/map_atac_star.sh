@@ -10,13 +10,14 @@
 #   READS_DIR=/cleaned/fastqs LIBRARY_ID=atac_rep1
 # derives R1=$READS_DIR/${LIBRARY_ID}_R1.fq.gz and R2=..._R2.fq.gz.
 #
-# Outputs (OUTDIR, default results/mapping/atac):
+# Outputs:
 #   ${LIBRARY_ID}.Aligned.sortedByCoord.out.bam (+ .bai)
 #   ${LIBRARY_ID}.Log.final.out
 #   ${LIBRARY_ID}.mapping_summary.tsv
 #
-# ATAC keeps up to two STAR alignments so fragments without parent-discriminating
-# sequence remain visible until downstream MAPQ and same-haplotype filtering.
+# ATAC keeps up to two STAR alignments so ambiguous fragments remain visible at
+# the mapping stage. Final allele-specific region counting applies downstream
+# MAPQ filtering and same-parent fragment checks.
 
 set -euo pipefail
 
@@ -43,8 +44,18 @@ done
 REP=${REP:-1}
 SAMPLE=${SAMPLE:-atac}
 LIBRARY_ID=${LIBRARY_ID:-${SAMPLE}_rep${REP}}
-INDEX_DIR=${INDEX_DIR:-results/star_index}
-OUTDIR=${OUTDIR:-results/mapping/atac}
+RUN_NAME=${RUN_NAME:-}
+REFERENCE_ID=${REFERENCE_ID:-}
+if [ -n "$REFERENCE_ID" ]; then
+    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
+else
+    INDEX_DIR=${INDEX_DIR:-results/star_index}
+fi
+if [ -n "$RUN_NAME" ]; then
+    OUTDIR=${OUTDIR:-results/${RUN_NAME}/atac/${LIBRARY_ID}/mapping}
+else
+    OUTDIR=${OUTDIR:-results/mapping/atac}
+fi
 THREADS=${THREADS:-4}
 R1=${R1:-}
 R2=${R2:-}
@@ -101,6 +112,8 @@ echo "  prefix = $PREFIX"
 alignment_records=$("$SAMTOOLS" view -c "$BAM")
 {
     echo -e "metric\tvalue"
+    echo -e "run_name\t${RUN_NAME}"
+    echo -e "reference_id\t${REFERENCE_ID}"
     echo -e "assay\tatac"
     echo -e "sample\t${SAMPLE}"
     echo -e "rep\t${REP}"
