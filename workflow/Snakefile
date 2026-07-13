@@ -22,3 +22,4 @@ rule all:
             "results/counts/rna/{library_id}/filter_summary.tsv",
             library_id=RNA_LIBRARIES,
         ),
+        "results/reports/rna/multiqc_report.html",
