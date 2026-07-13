@@ -11,4 +11,6 @@ parents:
     fasta: ""
     gtf: ""
 
+rna_gene_pairs: ""
+
 samples: "config/samples.tsv"
