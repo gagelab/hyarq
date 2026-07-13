@@ -1,0 +1,9 @@
+channels:
+- conda-forge
+- bioconda
+- nodefaults
+
+dependencies:
+- subread=2.1.1
+- samtools=1.23.1
+- python=3.12
