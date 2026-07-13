@@ -35,3 +35,42 @@ rule map_rna_star:
         LIBRARY_ID={wildcards.library_id:q} \
         bash workflow/scripts/map_rna_star.sh > {log:q} 2>&1
         """
+
+
+rule count_rna_genes:
+    input:
+        bam=rules.map_rna_star.output.bam,
+        gtf=rules.build_concatenated_reference.output.gtf,
+        gene_pairs=config["rna_gene_pairs"],
+        validation=rules.validate_rna_gene_pairs.output.report,
+    output:
+        gene_counts="results/counts/rna/{library_id}/gene_counts.tsv",
+        filter_summary="results/counts/rna/{library_id}/filter_summary.tsv",
+    params:
+        sample=lambda wildcards: SAMPLES.loc[wildcards.library_id, "sample_id"],
+        replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
+        parent1_prefix=config["parents"]["parent1"]["prefix"],
+        parent2_prefix=config["parents"]["parent2"]["prefix"],
+        outdir="results/counts/rna/{library_id}",
+        count_tmpdir="results/counts/rna/{library_id}/tmp",
+    threads: 4
+    conda:
+        "../envs/rna_counting.yaml"
+    log:
+        "logs/counting/rna/{library_id}.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        BAM={input.bam:q} \
+        GTF={input.gtf:q} \
+        GENE_PAIRS={input.gene_pairs:q} \
+        PARENT1_PREFIX={params.parent1_prefix:q} \
+        PARENT2_PREFIX={params.parent2_prefix:q} \
+        OUTDIR={params.outdir:q} \
+        COUNT_TMPDIR={params.count_tmpdir:q} \
+        THREADS={threads} \
+        SAMPLE={params.sample:q} \
+        REP={params.replicate:q} \
+        LIBRARY_ID={wildcards.library_id:q} \
+        bash workflow/scripts/count_rna_genes.sh > {log:q} 2>&1
+        """
