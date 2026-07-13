@@ -14,4 +14,11 @@ include: "rules/reports.smk"
 
 rule all:
     input:
-        []
+        expand(
+            "results/counts/rna/{library_id}/gene_counts.tsv",
+            library_id=RNA_LIBRARIES,
+        ),
+        expand(
+            "results/counts/rna/{library_id}/filter_summary.tsv",
+            library_id=RNA_LIBRARIES,
+        ),
