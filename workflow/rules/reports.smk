@@ -21,7 +21,7 @@ rule rna_multiqc:
         config="config/multiqc_config.yaml",
     output:
         html="results/reports/rna/multiqc_report.html",
-        data=directory("results/reports/rna/multiqc_data"),
+        data=directory("results/reports/rna/multiqc_report_data"),
     params:
         outdir="results/reports/rna",
     conda:
