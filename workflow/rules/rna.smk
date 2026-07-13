@@ -1,1 +1,37 @@
 # RNA-seq mapping and gene-level allele-specific counting rules.
+
+rule map_rna_star:
+    input:
+        r1=rules.rna_fastp.output.r1,
+        r2=rules.rna_fastp.output.r2,
+        index=rules.build_star_index.output.index,
+    output:
+        bam="results/mapping/rna/{library_id}.Aligned.sortedByCoord.out.bam",
+        bai="results/mapping/rna/{library_id}.Aligned.sortedByCoord.out.bam.bai",
+        gene_counts="results/mapping/rna/{library_id}.ReadsPerGene.out.tab",
+        star_log="results/mapping/rna/{library_id}.Log.final.out",
+        summary="results/mapping/rna/{library_id}.mapping_summary.tsv",
+    params:
+        sample=lambda wildcards: SAMPLES.loc[wildcards.library_id, "sample_id"],
+        replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
+        reference_id=config["reference_id"],
+        outdir="results/mapping/rna",
+    threads: 4
+    conda:
+        "../envs/star.yaml"
+    log:
+        "logs/mapping/rna/{library_id}.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        R1={input.r1:q} \
+        R2={input.r2:q} \
+        REFERENCE_ID={params.reference_id:q} \
+        INDEX_DIR={input.index:q} \
+        OUTDIR={params.outdir:q} \
+        THREADS={threads} \
+        SAMPLE={params.sample:q} \
+        REP={params.replicate:q} \
+        LIBRARY_ID={wildcards.library_id:q} \
+        bash workflow/scripts/map_rna_star.sh > {log:q} 2>&1
+        """
