@@ -1,17 +1,12 @@
-# HyARQ configuration file.
-# This is a placeholder and will be expanded during workflow development.
-
-run_name: example_run
-reference_id: example_reference
+# reference_id identifies one parental cross; prefixes are parental names without the trailing underscore.
+reference_id: ""
 
 parents:
   parent1:
-    name: ""
     prefix: ""
     fasta: ""
     gtf: ""
   parent2:
-    name: ""
     prefix: ""
     fasta: ""
     gtf: ""
