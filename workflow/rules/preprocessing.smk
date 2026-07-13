@@ -47,3 +47,22 @@ rule rna_fastp:
             --thread {threads} \
             > {log:q} 2>&1
         """
+
+
+rule rna_clean_fastqc:
+    input:
+        r1="results/preprocessing/rna/{library_id}/{library_id}_R1.fq.gz",
+        r2="results/preprocessing/rna/{library_id}/{library_id}_R2.fq.gz",
+    output:
+        directory("results/qc/fastqc/clean/rna/{library_id}")
+    threads: 2
+    conda:
+        "../envs/fastqc.yaml"
+    log:
+        "logs/fastqc/clean/rna/{library_id}.log"
+    shell:
+        """
+        mkdir -p {output:q}
+        mkdir -p $(dirname {log:q})
+        fastqc --threads {threads} --outdir {output:q} {input.r1:q} {input.r2:q} > {log:q} 2>&1
+        """
