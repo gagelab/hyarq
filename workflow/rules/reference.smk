@@ -35,3 +35,20 @@ rule build_concatenated_reference:
         OUTDIR={params.outdir:q} \
         bash workflow/scripts/build_concatenated_reference.sh > {log:q} 2>&1
         """
+
+
+rule validate_rna_gene_pairs:
+    input:
+        gene_pairs=config["rna_gene_pairs"]
+    output:
+        report="results/qc/rna/gene_pairs_validation.tsv"
+    log:
+        "logs/validation/rna_gene_pairs.log"
+    shell:
+        """
+        mkdir -p $(dirname {log:q})
+        python workflow/scripts/validate_paired_features.py \
+          --gene-pairs {input.gene_pairs:q} \
+          --report {output.report:q} \
+          > {log:q} 2>&1
+        """
