@@ -4,6 +4,10 @@ import argparse
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import pandas as pd
 
 
@@ -37,6 +41,16 @@ def fail(errors):
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     return 1
+
+
+def positive_integer(value):
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be an integer greater than or equal to 1") from exc
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be an integer greater than or equal to 1")
+    return parsed
 
 
 def read_count_table(path, errors):
@@ -138,13 +152,17 @@ def summarize_table(library_id, table):
     }
 
 
-def summarize_pooled(tables):
+def build_pooled_table(tables):
     pooled = pd.concat(tables, ignore_index=True)
     pooled = (
         pooled.groupby(PAIRED_COLUMNS, sort=False, as_index=False)[["parent1_count", "parent2_count"]]
         .sum()
     )
     pooled["total_count"] = pooled["parent1_count"] + pooled["parent2_count"]
+    return pooled
+
+
+def summarize_pooled(pooled):
     return summarize_table("pooled_all_libraries", pooled)
 
 
@@ -154,10 +172,51 @@ def write_summary(rows, path):
     summary.to_csv(path, sep="\t", index=False, lineterminator="\n")
 
 
+def write_pooled_histogram(pooled, path, min_total_count):
+    plotted = pooled.loc[pooled["total_count"] >= min_total_count]
+    plotted_count = len(plotted)
+    print(
+        f"pooled histogram minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        file=sys.stderr,
+    )
+    if plotted_count == 0:
+        print("WARNING: no pooled gene pairs meet the selected minimum total count", file=sys.stderr)
+
+    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+    bins = [i / 20 for i in range(21)]
+    if plotted_count:
+        ax.hist(plotted["parent1_count"] / plotted["total_count"], bins=bins)
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No gene pairs meet the selected\nminimum total count",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+        )
+    ax.set_xlim(0, 1)
+    ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
+    ax.set_xlabel("Parent1 fraction")
+    ax.set_ylabel("Gene pairs")
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    fig.suptitle("Pooled RNA gene parental fractions")
+    ax.set_title(
+        f"Minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        fontsize=9,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, format="pdf")
+    plt.close(fig)
+
+
 def main():
     ap = ErrorParser(description="Summarize RNA gene count QC metrics.")
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
+    ap.add_argument("--pooled-histogram", required=True)
+    ap.add_argument("--min-total-count", type=positive_integer, default=1)
     args = ap.parse_args()
 
     if not args.count_tables:
@@ -191,9 +250,11 @@ def main():
     if errors:
         return fail(errors)
 
+    pooled = build_pooled_table(tables)
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
-    rows.append(summarize_pooled(tables))
+    rows.append(summarize_pooled(pooled))
     write_summary(rows, Path(args.summary))
+    write_pooled_histogram(pooled, Path(args.pooled_histogram), args.min_total_count)
     return 0
 
 
