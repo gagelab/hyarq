@@ -47,6 +47,44 @@ def plot_parental_fraction_histogram(
     ax.set_title(subtitle, fontsize=9)
 
 
+def plot_parent_count_scatter(
+    ax,
+    plotted,
+    min_total_count,
+    plotted_count,
+):
+    if plotted_count > 0:
+        x = plotted["parent1_count"]
+        y = plotted["parent2_count"]
+        ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
+        max_count = max(x.max(), y.max())
+        axis_limit = 1.05 * max_count
+        ax.set_xlim(0, axis_limit)
+        ax.set_ylim(0, axis_limit)
+        ax.plot([0, axis_limit], [0, axis_limit], linestyle="--", color="black", linewidth=1)
+        ax.set_aspect("equal", adjustable="box")
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No gene pairs meet the selected\nminimum total count",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+    ax.set_xlabel("Parent1 count")
+    ax.set_ylabel("Parent2 count")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_title(
+        f"Parent1 count vs Parent2 count\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        fontsize=9,
+    )
+
+
 def write_rna_gene_qc_report(
     library_ids,
     tables,
@@ -63,7 +101,7 @@ def write_rna_gene_qc_report(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
-        fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), constrained_layout=True)
         plotted = pooled.loc[pooled["total_count"] >= min_total_count]
         plotted_count = len(plotted)
         print(
@@ -75,13 +113,15 @@ def write_rna_gene_qc_report(
 
         fractions = plotted["parent1_count"] / plotted["total_count"]
         plot_parental_fraction_histogram(
-            ax,
+            axes[0],
             fractions,
             min_total_count,
             plotted_count,
             histogram_color=histogram_color,
+            panel_title="Parental-fraction distribution",
         )
-        fig.suptitle("Pooled RNA gene parental fractions")
+        plot_parent_count_scatter(axes[1], plotted, min_total_count, plotted_count)
+        fig.suptitle("Pooled RNA gene QC")
         pdf.savefig(fig)
         plt.close(fig)
 
