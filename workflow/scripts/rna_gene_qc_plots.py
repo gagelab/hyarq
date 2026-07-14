@@ -47,38 +47,46 @@ def plot_parental_fraction_histogram(
     ax.set_title(subtitle, fontsize=9)
 
 
-def write_pooled_histogram(pooled, path, min_total_count, histogram_color):
-    plotted = pooled.loc[pooled["total_count"] >= min_total_count]
-    plotted_count = len(plotted)
-    print(
-        f"pooled histogram minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
-        file=sys.stderr,
-    )
-    if plotted_count == 0:
-        print("WARNING: no pooled gene pairs meet the selected minimum total count", file=sys.stderr)
-
-    fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
-    fractions = plotted["parent1_count"] / plotted["total_count"]
-    plot_parental_fraction_histogram(
-        ax,
-        fractions,
-        min_total_count,
-        plotted_count,
-        histogram_color=histogram_color,
-    )
-    fig.suptitle("Pooled RNA gene parental fractions")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, format="pdf")
-    plt.close(fig)
-
-
-def write_sample_histograms(library_ids, tables, path, min_total_count, histogram_color, rows, columns):
+def write_rna_gene_qc_report(
+    library_ids,
+    tables,
+    pooled,
+    path,
+    min_total_count,
+    histogram_color,
+    rows,
+    columns,
+):
     page_capacity = rows * columns
-    page_count = (len(library_ids) + page_capacity - 1) // page_capacity
-    sample_items = list(zip(library_ids, tables))
+    sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
+    total_page_count = 1 + sample_page_count
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
-        for page_index in range(page_count):
+        fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+        plotted = pooled.loc[pooled["total_count"] >= min_total_count]
+        plotted_count = len(plotted)
+        print(
+            f"pooled histogram minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+            file=sys.stderr,
+        )
+        if plotted_count == 0:
+            print("WARNING: no pooled gene pairs meet the selected minimum total count", file=sys.stderr)
+
+        fractions = plotted["parent1_count"] / plotted["total_count"]
+        plot_parental_fraction_histogram(
+            ax,
+            fractions,
+            min_total_count,
+            plotted_count,
+            histogram_color=histogram_color,
+        )
+        fig.suptitle("Pooled RNA gene parental fractions")
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        sample_items = list(zip(library_ids, tables))
+        for page_index in range(sample_page_count):
             start = page_index * page_capacity
             page_items = sample_items[start:start + page_capacity]
             page_columns = min(columns, len(page_items))
@@ -114,6 +122,7 @@ def write_sample_histograms(library_ids, tables, path, min_total_count, histogra
             pdf.savefig(fig)
             plt.close(fig)
     print(
-        f"sample histograms minimum total count: {min_total_count}; libraries processed: {len(library_ids)}; PDF pages written: {page_count}",
+        f"sample histograms minimum total count: {min_total_count}; libraries processed: {len(library_ids)}; sample pages written: {sample_page_count}",
         file=sys.stderr,
     )
+    print(f"RNA gene QC report pages written: {total_page_count}", file=sys.stderr)

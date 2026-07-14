@@ -8,8 +8,7 @@ import pandas as pd
 
 from rna_gene_qc_plots import (
     plot_color,
-    write_pooled_histogram,
-    write_sample_histograms,
+    write_rna_gene_qc_report,
 )
 
 
@@ -178,8 +177,7 @@ def main():
     ap = ErrorParser(description="Summarize RNA gene count QC metrics.")
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
-    ap.add_argument("--pooled-histogram", required=True)
-    ap.add_argument("--sample-histograms", required=True)
+    ap.add_argument("--report", required=True)
     ap.add_argument("--min-total-count", type=positive_integer, default=1)
     ap.add_argument(
         "--histogram-color",
@@ -226,11 +224,11 @@ def main():
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
     rows.append(summarize_pooled(pooled))
     write_summary(rows, Path(args.summary))
-    write_pooled_histogram(pooled, Path(args.pooled_histogram), args.min_total_count, args.histogram_color)
-    write_sample_histograms(
+    write_rna_gene_qc_report(
         library_ids,
         tables,
-        Path(args.sample_histograms),
+        pooled,
+        Path(args.report),
         args.min_total_count,
         args.histogram_color,
         args.sample_histogram_rows,
