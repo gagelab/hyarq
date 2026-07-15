@@ -6,7 +6,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import is_color_like
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import LogFormatterMathtext, LogLocator, MaxNLocator, NullFormatter
 
 
 def plot_color(value):
@@ -100,7 +100,10 @@ def plot_total_count_imbalance_scatter(
         parent1_fraction = plotted["parent1_count"] / plotted["total_count"]
         y = (parent1_fraction - 0.5).abs()
         ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
-        ax.set_xlim(0, 1.05 * x.max())
+        ax.set_xscale("log")
+        ax.xaxis.set_major_locator(LogLocator(base=10))
+        ax.xaxis.set_major_formatter(LogFormatterMathtext(base=10))
+        ax.xaxis.set_minor_formatter(NullFormatter())
         ax.set_ylim(0, 0.5)
     else:
         ax.text(
@@ -116,7 +119,6 @@ def plot_total_count_imbalance_scatter(
         ax.set_ylim(0, 0.5)
     ax.set_xlabel("Total count")
     ax.set_ylabel(f"Absolute parental imbalance\n|{parent1_label} fraction - 0.5|")
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(
         f"Total count vs absolute parental imbalance\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
         fontsize=9,
