@@ -21,6 +21,7 @@ def plot_parental_fraction_histogram(
     min_total_count,
     plotted_count,
     histogram_color,
+    parent1_label,
     panel_title=None,
 ):
     bins = [i / 20 for i in range(21)]
@@ -38,7 +39,7 @@ def plot_parental_fraction_histogram(
         )
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
-    ax.set_xlabel("Parent1 fraction")
+    ax.set_xlabel(f"{parent1_label} fraction")
     ax.set_ylabel("Gene pairs")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     subtitle = f"Minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}"
@@ -52,6 +53,8 @@ def plot_parent_count_scatter(
     plotted,
     min_total_count,
     plotted_count,
+    parent1_label,
+    parent2_label,
 ):
     if plotted_count > 0:
         x = plotted["parent1_count"]
@@ -75,12 +78,12 @@ def plot_parent_count_scatter(
         )
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
-    ax.set_xlabel("Parent1 count")
-    ax.set_ylabel("Parent2 count")
+    ax.set_xlabel(f"{parent1_label} count")
+    ax.set_ylabel(f"{parent2_label} count")
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(
-        f"Parent1 count vs Parent2 count\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        f"{parent1_label} count vs {parent2_label} count\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
         fontsize=9,
     )
 
@@ -94,6 +97,8 @@ def write_rna_gene_qc_report(
     histogram_color,
     rows,
     columns,
+    parent1_label,
+    parent2_label,
 ):
     page_capacity = rows * columns
     sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
@@ -118,9 +123,17 @@ def write_rna_gene_qc_report(
             min_total_count,
             plotted_count,
             histogram_color=histogram_color,
+            parent1_label=parent1_label,
             panel_title="Parental-fraction distribution",
         )
-        plot_parent_count_scatter(axes[1], plotted, min_total_count, plotted_count)
+        plot_parent_count_scatter(
+            axes[1],
+            plotted,
+            min_total_count,
+            plotted_count,
+            parent1_label,
+            parent2_label,
+        )
         fig.suptitle("Pooled RNA gene QC")
         pdf.savefig(fig)
         plt.close(fig)
@@ -155,6 +168,7 @@ def write_rna_gene_qc_report(
                     min_total_count,
                     plotted_count,
                     histogram_color=histogram_color,
+                    parent1_label=parent1_label,
                     panel_title=library_id,
                 )
             for ax in axes.flat[len(page_items):]:
