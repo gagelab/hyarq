@@ -123,6 +123,45 @@ def plot_total_count_imbalance_scatter(
     )
 
 
+def plot_gene_pair_retention(
+    ax,
+    pooled,
+):
+    total_gene_pairs = len(pooled)
+    if total_gene_pairs == 0:
+        ax.text(
+            0.5,
+            0.5,
+            "No gene pairs available",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 100)
+    else:
+        positive_total_counts = pooled.loc[pooled["total_count"] > 0, "total_count"]
+        thresholds = sorted(int(value) for value in positive_total_counts.unique())
+        if 1 not in thresholds:
+            thresholds.append(1)
+            thresholds = sorted(thresholds)
+        retained_percentages = [
+            100 * (pooled["total_count"] >= threshold).sum() / total_gene_pairs
+            for threshold in thresholds
+        ]
+        ax.step(thresholds, retained_percentages, where="pre", marker="o")
+        ax.set_xlim(0, 1.05 * thresholds[-1])
+        ax.set_ylim(0, 100)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_xlabel("Minimum total count")
+    ax.set_ylabel("Retained gene pairs (%)")
+    ax.set_title(
+        f"Gene-pair retention across count thresholds\nAll pooled gene pairs: {total_gene_pairs}",
+        fontsize=9,
+    )
+
+
 def write_rna_gene_qc_report(
     library_ids,
     tables,
@@ -181,7 +220,10 @@ def write_rna_gene_qc_report(
             plotted_count,
             parent1_label,
         )
-        axes[1, 1].set_visible(False)
+        plot_gene_pair_retention(
+            axes[1, 1],
+            pooled,
+        )
         fig.suptitle("Pooled RNA gene QC")
         pdf.savefig(fig)
         plt.close(fig)
