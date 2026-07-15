@@ -88,6 +88,41 @@ def plot_parent_count_scatter(
     )
 
 
+def plot_total_count_imbalance_scatter(
+    ax,
+    plotted,
+    min_total_count,
+    plotted_count,
+    parent1_label,
+):
+    if plotted_count > 0:
+        x = plotted["total_count"]
+        parent1_fraction = plotted["parent1_count"] / plotted["total_count"]
+        y = (parent1_fraction - 0.5).abs()
+        ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
+        ax.set_xlim(0, 1.05 * x.max())
+        ax.set_ylim(0, 0.5)
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No gene pairs meet the selected\nminimum total count",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+        )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 0.5)
+    ax.set_xlabel("Total count")
+    ax.set_ylabel(f"Absolute parental imbalance\n|{parent1_label} fraction - 0.5|")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_title(
+        f"Total count vs absolute parental imbalance\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        fontsize=9,
+    )
+
+
 def write_rna_gene_qc_report(
     library_ids,
     tables,
@@ -106,11 +141,16 @@ def write_rna_gene_qc_report(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
-        fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), constrained_layout=True)
+        fig, axes = plt.subplots(
+            2,
+            2,
+            figsize=(10, 8),
+            constrained_layout=True,
+        )
         plotted = pooled.loc[pooled["total_count"] >= min_total_count]
         plotted_count = len(plotted)
         print(
-            f"pooled histogram minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+            f"pooled plots minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
             file=sys.stderr,
         )
         if plotted_count == 0:
@@ -118,7 +158,7 @@ def write_rna_gene_qc_report(
 
         fractions = plotted["parent1_count"] / plotted["total_count"]
         plot_parental_fraction_histogram(
-            axes[0],
+            axes[0, 0],
             fractions,
             min_total_count,
             plotted_count,
@@ -127,13 +167,21 @@ def write_rna_gene_qc_report(
             panel_title="Parental-fraction distribution",
         )
         plot_parent_count_scatter(
-            axes[1],
+            axes[0, 1],
             plotted,
             min_total_count,
             plotted_count,
             parent1_label,
             parent2_label,
         )
+        plot_total_count_imbalance_scatter(
+            axes[1, 0],
+            plotted,
+            min_total_count,
+            plotted_count,
+            parent1_label,
+        )
+        axes[1, 1].set_visible(False)
         fig.suptitle("Pooled RNA gene QC")
         pdf.savefig(fig)
         plt.close(fig)
