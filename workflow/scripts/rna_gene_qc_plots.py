@@ -141,19 +141,16 @@ def plot_gene_pair_retention(
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 100)
     else:
-        positive_total_counts = pooled.loc[pooled["total_count"] > 0, "total_count"]
-        thresholds = sorted(int(value) for value in positive_total_counts.unique())
-        if 1 not in thresholds:
-            thresholds.append(1)
-            thresholds = sorted(thresholds)
+        thresholds = [1, 5, 10, 20, 50, 100, 200, 500, 1000]
+        positions = range(len(thresholds))
         retained_percentages = [
             100 * (pooled["total_count"] >= threshold).sum() / total_gene_pairs
             for threshold in thresholds
         ]
-        ax.step(thresholds, retained_percentages, where="pre", marker="o")
-        ax.set_xlim(0, 1.05 * thresholds[-1])
+        ax.plot(positions, retained_percentages, marker="o")
+        ax.set_xticks(positions)
+        ax.set_xticklabels(thresholds)
         ax.set_ylim(0, 100)
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel("Minimum total count")
     ax.set_ylabel("Retained gene pairs (%)")
     ax.set_title(
