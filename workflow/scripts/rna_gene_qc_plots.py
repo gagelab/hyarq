@@ -56,21 +56,31 @@ def plot_parent_count_scatter(
     parent1_label,
     parent2_label,
 ):
-    if plotted_count > 0:
-        x = plotted["parent1_count"]
-        y = plotted["parent2_count"]
+    both_positive = plotted.loc[(plotted["parent1_count"] > 0) & (plotted["parent2_count"] > 0)]
+    both_positive_count = len(both_positive)
+    if both_positive_count > 0:
+        x = both_positive["parent1_count"]
+        y = both_positive["parent2_count"]
         ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
         max_count = max(x.max(), y.max())
         axis_limit = 1.05 * max_count
-        ax.set_xlim(0, axis_limit)
-        ax.set_ylim(0, axis_limit)
-        ax.plot([0, axis_limit], [0, axis_limit], linestyle="--", color="black", linewidth=1)
+        ax.set_xscale("log", base=10)
+        ax.set_yscale("log", base=10)
+        ax.xaxis.set_major_locator(LogLocator(base=10))
+        ax.yaxis.set_major_locator(LogLocator(base=10))
+        ax.xaxis.set_major_formatter(LogFormatterMathtext(base=10))
+        ax.yaxis.set_major_formatter(LogFormatterMathtext(base=10))
+        ax.xaxis.set_minor_formatter(NullFormatter())
+        ax.yaxis.set_minor_formatter(NullFormatter())
+        ax.set_xlim(1, axis_limit)
+        ax.set_ylim(1, axis_limit)
+        ax.plot([1, axis_limit], [1, axis_limit], linestyle="--", color="black", linewidth=1)
         ax.set_aspect("equal", adjustable="box")
     else:
         ax.text(
             0.5,
             0.5,
-            "No gene pairs meet the selected\nminimum total count",
+            "No gene pairs have positive counts\nfor both parents",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -80,10 +90,8 @@ def plot_parent_count_scatter(
         ax.set_ylim(0, 1)
     ax.set_xlabel(f"{parent1_label} count")
     ax.set_ylabel(f"{parent2_label} count")
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(
-        f"{parent1_label} count vs {parent2_label} count\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
+        f"{parent1_label} count vs {parent2_label} count\nMinimum total count: {min_total_count}; both-positive gene pairs: {both_positive_count}",
         fontsize=9,
     )
 
