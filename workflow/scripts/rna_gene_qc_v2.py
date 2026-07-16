@@ -31,6 +31,13 @@ SUMMARY_COLUMNS = [
     "median_gene_pair_parent1_fraction",
 ]
 PAIRED_COLUMNS = ["parent1_gene_id", "parent2_gene_id"]
+RETENTION_THRESHOLDS = [1, 5, 10, 20, 30, 40, 50, 60]
+RETENTION_COLUMNS = [
+    "library_id",
+    "minimum_total_count",
+    "retained_gene_pairs",
+    "retained_percent",
+]
 
 
 class ErrorParser(argparse.ArgumentParser):
@@ -173,11 +180,32 @@ def write_summary(rows, path):
     summary.to_csv(path, sep="\t", index=False, lineterminator="\n")
 
 
+def write_retention(library_ids, tables, path):
+    rows = []
+    for library_id, table in zip(library_ids, tables):
+        total_gene_pairs = len(table)
+        for threshold in RETENTION_THRESHOLDS:
+            retained_gene_pairs = int((table["total_count"] >= threshold).sum())
+            retained_percent = 100 * retained_gene_pairs / total_gene_pairs
+            rows.append(
+                {
+                    "library_id": library_id,
+                    "minimum_total_count": threshold,
+                    "retained_gene_pairs": retained_gene_pairs,
+                    "retained_percent": f"{retained_percent:.6f}",
+                }
+            )
+    retention = pd.DataFrame(rows, columns=RETENTION_COLUMNS)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    retention.to_csv(path, sep="\t", index=False, lineterminator="\n")
+
+
 def main():
     ap = ErrorParser(description="Summarize RNA gene count QC metrics.")
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
     ap.add_argument("--report", required=True)
+    ap.add_argument("--retention", required=True)
     ap.add_argument("--min-total-count", type=positive_integer, default=1)
     ap.add_argument(
         "--histogram-color",
@@ -226,6 +254,7 @@ def main():
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
     rows.append(summarize_pooled(pooled))
     write_summary(rows, Path(args.summary))
+    write_retention(library_ids, tables, Path(args.retention))
     write_rna_gene_qc_report(
         library_ids,
         tables,
