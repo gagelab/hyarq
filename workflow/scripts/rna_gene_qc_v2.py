@@ -180,7 +180,7 @@ def write_summary(rows, path):
     summary.to_csv(path, sep="\t", index=False, lineterminator="\n")
 
 
-def write_retention(library_ids, tables, path):
+def build_retention(library_ids, tables):
     rows = []
     for library_id, table in zip(library_ids, tables):
         total_gene_pairs = len(table)
@@ -192,12 +192,22 @@ def write_retention(library_ids, tables, path):
                     "library_id": library_id,
                     "minimum_total_count": threshold,
                     "retained_gene_pairs": retained_gene_pairs,
-                    "retained_percent": f"{retained_percent:.6f}",
+                    "retained_percent": retained_percent,
                 }
             )
-    retention = pd.DataFrame(rows, columns=RETENTION_COLUMNS)
+    return pd.DataFrame(rows, columns=RETENTION_COLUMNS).astype(
+        {
+            "library_id": "string",
+            "minimum_total_count": "int64",
+            "retained_gene_pairs": "int64",
+            "retained_percent": "float64",
+        }
+    )
+
+
+def write_retention(retention, path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    retention.to_csv(path, sep="\t", index=False, lineterminator="\n")
+    retention.to_csv(path, sep="\t", index=False, lineterminator="\n", float_format="%.6f")
 
 
 def main():
@@ -254,11 +264,13 @@ def main():
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
     rows.append(summarize_pooled(pooled))
     write_summary(rows, Path(args.summary))
-    write_retention(library_ids, tables, Path(args.retention))
+    retention = build_retention(library_ids, tables)
+    write_retention(retention, Path(args.retention))
     write_rna_gene_qc_report(
         library_ids,
         tables,
         pooled,
+        retention,
         Path(args.report),
         args.min_total_count,
         args.histogram_color,

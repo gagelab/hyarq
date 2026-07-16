@@ -169,10 +169,38 @@ def plot_gene_pair_retention(
     )
 
 
+def plot_across_library_retention(ax, retention):
+    thresholds = retention["minimum_total_count"].drop_duplicates().tolist()
+    grouped = retention.groupby("minimum_total_count")["retained_percent"]
+    summary = grouped.agg(
+        median="median",
+        q25=lambda values: values.quantile(0.25, interpolation="linear"),
+        q75=lambda values: values.quantile(0.75, interpolation="linear"),
+    ).reindex(thresholds)
+
+    x = summary.index.to_numpy()
+    median = summary["median"].to_numpy()
+    q25 = summary["q25"].to_numpy()
+    q75 = summary["q75"].to_numpy()
+
+    ax.fill_between(x, q25, q75, alpha=0.2)
+    ax.plot(x, median, marker="o", markersize=5, linewidth=1.8)
+    ax.set_xlim(0, 62)
+    ax.set_ylim(0, 100)
+    ax.set_xticks(thresholds)
+    ax.set_xlabel("Minimum total count per gene pair")
+    ax.set_ylabel("Gene pairs retained (%)")
+    ax.set_title(
+        "Across-library gene-pair retention\nMedian and interquartile range across libraries",
+        fontsize=9,
+    )
+
+
 def write_rna_gene_qc_report(
     library_ids,
     tables,
     pooled,
+    retention,
     path,
     min_total_count,
     histogram_color,
@@ -185,8 +213,10 @@ def write_rna_gene_qc_report(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
-        fig, ax = plt.subplots(
-            figsize=(6.5, 4.5),
+        fig, axes = plt.subplots(
+            1,
+            2,
+            figsize=(11, 4.5),
             constrained_layout=True,
         )
         plotted = pooled.loc[pooled["total_count"] >= min_total_count]
@@ -200,7 +230,7 @@ def write_rna_gene_qc_report(
 
         fractions = plotted["parent1_count"] / plotted["total_count"]
         plot_parental_fraction_histogram(
-            ax,
+            axes[0],
             fractions,
             min_total_count,
             plotted_count,
@@ -211,6 +241,7 @@ def write_rna_gene_qc_report(
                 "Counts summed by gene pair across all libraries"
             ),
         )
+        plot_across_library_retention(axes[1], retention)
         pdf.savefig(fig)
         plt.close(fig)
     print(f"RNA gene QC report pages written: {total_page_count}", file=sys.stderr)
