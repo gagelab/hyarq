@@ -178,12 +178,23 @@ def main():
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
     ap.add_argument("--report", required=True)
-    ap.add_argument("--min-total-count", type=positive_integer, default=1)
+    ap.add_argument(
+        "--min-total-count",
+        type=positive_integer,
+        default=1,
+        help="Minimum total count used by threshold-dependent plots; Panel A always includes pooled gene pairs with total_count > 0.",
+    )
     ap.add_argument(
         "--histogram-color",
         type=plot_color,
         default="tab:blue",
-        help="Color used for pooled and sample parental-fraction histogram bars.",
+        help="Color used for parental count proportion histogram bars.",
+    )
+    ap.add_argument(
+        "--histogram-bins",
+        type=positive_integer,
+        default=20,
+        help="Number of equal-width bins used for the Panel A parental count proportion histogram.",
     )
     ap.add_argument("--sample-histogram-columns", type=positive_integer, default=3)
     ap.add_argument("--sample-histogram-rows", type=positive_integer, default=2)
@@ -237,6 +248,7 @@ def main():
         args.sample_histogram_columns,
         parent1_label=args.parent1_label,
         parent2_label=args.parent2_label,
+        histogram_bins=args.histogram_bins,
     )
     return 0
 

@@ -4,6 +4,7 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import is_color_like
 from matplotlib.ticker import LogFormatterMathtext, LogLocator, MaxNLocator, NullFormatter
@@ -46,6 +47,46 @@ def plot_parental_fraction_histogram(
     if panel_title is not None:
         subtitle = f"{panel_title}\n{subtitle}"
     ax.set_title(subtitle, fontsize=9)
+
+
+def plot_pooled_parental_fraction_histogram(
+    ax,
+    pooled,
+    histogram_color,
+    parent1_label,
+    histogram_bins,
+):
+    plotted = pooled.loc[pooled["total_count"] > 0]
+    plotted_count = len(plotted)
+
+    if plotted_count > 0:
+        fractions = plotted["parent1_count"] / plotted["total_count"]
+        bins = np.linspace(0.0, 1.0, histogram_bins + 1)
+        ax.hist(
+            fractions,
+            bins=bins,
+            color=histogram_color,
+        )
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No pooled gene pairs have\na positive total count",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+        )
+
+    ax.set_xlim(0, 1)
+    ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
+    ax.set_xlabel(f"{parent1_label} count proportion")
+    ax.set_ylabel("Gene pairs")
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_title(
+        f"A. Parental count proportion\nGene pairs with total count > 0: {plotted_count:,}"
+    )
+    return plotted_count
 
 
 def plot_parent_count_scatter(
@@ -180,6 +221,7 @@ def write_rna_gene_qc_report(
     columns,
     parent1_label,
     parent2_label,
+    histogram_bins,
 ):
     page_capacity = rows * columns
     sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
@@ -202,15 +244,16 @@ def write_rna_gene_qc_report(
         if plotted_count == 0:
             print("WARNING: no pooled gene pairs meet the selected minimum total count", file=sys.stderr)
 
-        fractions = plotted["parent1_count"] / plotted["total_count"]
-        plot_parental_fraction_histogram(
+        panel_a_plotted_count = plot_pooled_parental_fraction_histogram(
             axes[0, 0],
-            fractions,
-            min_total_count,
-            plotted_count,
+            pooled,
             histogram_color=histogram_color,
             parent1_label=parent1_label,
-            panel_title="Parental-fraction distribution",
+            histogram_bins=histogram_bins,
+        )
+        print(
+            f"Panel A pooled positive-count gene pairs: {panel_a_plotted_count}",
+            file=sys.stderr,
         )
         plot_parent_count_scatter(
             axes[0, 1],
