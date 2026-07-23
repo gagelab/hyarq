@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -52,6 +53,22 @@ def positive_integer(value):
     if parsed < 1:
         raise argparse.ArgumentTypeError("must be an integer greater than or equal to 1")
     return parsed
+
+
+def positive_unit_float(value):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "must be greater than 0 and at most 1"
+        ) from exc
+
+    if math.isfinite(parsed) and 0 < parsed <= 1:
+        return parsed
+
+    raise argparse.ArgumentTypeError(
+        "must be greater than 0 and at most 1"
+    )
 
 
 def read_count_table(path, errors):
@@ -196,6 +213,18 @@ def main():
         default=20,
         help="Number of equal-width bins used for the Panel A parental count proportion histogram.",
     )
+    ap.add_argument(
+        "--depth-curve-color",
+        type=plot_color,
+        default="tab:blue",
+        help="Color used for per-library cumulative gene-pair depth curves.",
+    )
+    ap.add_argument(
+        "--depth-curve-alpha",
+        type=positive_unit_float,
+        default=0.15,
+        help="Transparency used for per-library cumulative gene-pair depth curves; must be greater than 0 and at most 1.",
+    )
     ap.add_argument("--sample-histogram-columns", type=positive_integer, default=3)
     ap.add_argument("--sample-histogram-rows", type=positive_integer, default=2)
     ap.add_argument("--parent1-label", default="Parent1", help="Parent1 name displayed in the report.")
@@ -249,6 +278,8 @@ def main():
         parent1_label=args.parent1_label,
         parent2_label=args.parent2_label,
         histogram_bins=args.histogram_bins,
+        depth_curve_color=args.depth_curve_color,
+        depth_curve_alpha=args.depth_curve_alpha,
     )
     return 0
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import is_color_like
-from matplotlib.ticker import LogFormatterMathtext, LogLocator, MaxNLocator, NullFormatter
+from matplotlib.ticker import MaxNLocator
 
 
 def plot_color(value):
@@ -150,41 +150,94 @@ def plot_parent_count_hexbin(
     return plotted_count
 
 
-def plot_total_count_imbalance_scatter(
+def plot_per_library_cumulative_depth_curves(
     ax,
-    plotted,
-    min_total_count,
-    plotted_count,
-    parent1_label,
+    tables,
+    depth_curve_color,
+    depth_curve_alpha,
 ):
-    if plotted_count > 0:
-        x = plotted["total_count"]
-        parent1_fraction = plotted["parent1_count"] / plotted["total_count"]
-        y = (parent1_fraction - 0.5).abs()
-        ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
-        ax.set_xscale("log")
-        ax.xaxis.set_major_locator(LogLocator(base=10))
-        ax.xaxis.set_major_formatter(LogFormatterMathtext(base=10))
-        ax.xaxis.set_minor_formatter(NullFormatter())
-        ax.set_ylim(0, 0.5)
+    sorted_counts_by_library = []
+    skipped_library_count = 0
+    for table in tables:
+        positive_total_counts = table.loc[
+            table["total_count"] > 0,
+            "total_count",
+        ].to_numpy()
+        if len(positive_total_counts) == 0:
+            skipped_library_count += 1
+            continue
+        sorted_counts_by_library.append(np.sort(positive_total_counts))
+
+    included_library_count = len(sorted_counts_by_library)
+    if included_library_count > 0:
+        maximum_positive_count = max(
+            sorted_total_counts[-1]
+            for sorted_total_counts in sorted_counts_by_library
+        )
+        maximum_log2_depth = np.log2(maximum_positive_count)
+        grid_upper_log2 = max(maximum_log2_depth, 1.0)
+        grid_point_count = 512
+        log2_depth_grid = np.linspace(
+            0.0,
+            grid_upper_log2,
+            grid_point_count,
+        )
+        raw_depth_grid = np.exp2(log2_depth_grid)
+        if maximum_positive_count > 1:
+            raw_depth_grid[-1] = maximum_positive_count
+
+        library_curves = np.asarray([
+            np.searchsorted(
+                sorted_total_counts,
+                raw_depth_grid,
+                side="right",
+            )
+            / len(sorted_total_counts)
+            for sorted_total_counts in sorted_counts_by_library
+        ])
+        median_curve = np.median(library_curves, axis=0)
+        for curve in library_curves:
+            ax.step(
+                log2_depth_grid,
+                curve,
+                where="post",
+                color=depth_curve_color,
+                alpha=depth_curve_alpha,
+                linewidth=0.8,
+                zorder=1,
+            )
+        ax.step(
+            log2_depth_grid,
+            median_curve,
+            where="post",
+            color="black",
+            alpha=1,
+            linewidth=2.0,
+            zorder=2,
+        )
+        ax.set_xlim(0, grid_upper_log2)
     else:
         ax.text(
             0.5,
             0.5,
-            "No gene pairs meet the selected\nminimum total count",
+            "No libraries have gene pairs with total count > 0",
             ha="center",
             va="center",
             transform=ax.transAxes,
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
         ax.set_xlim(0, 1)
-        ax.set_ylim(0, 0.5)
-    ax.set_xlabel("Total count")
-    ax.set_ylabel(f"Absolute parental imbalance\n|{parent1_label} fraction - 0.5|")
-    ax.set_title(
-        f"Total count vs absolute parental imbalance\nMinimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
-        fontsize=9,
+    ax.xaxis.set_major_locator(
+        MaxNLocator(nbins=6, integer=True)
     )
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("log2(total count per gene pair)")
+    ax.set_ylabel("Cumulative fraction of counted gene pairs")
+    ax.set_title(
+        "C. Per-library cumulative gene-pair depth curves\n"
+        "Gene pairs with total count > 0"
+    )
+    return included_library_count, skipped_library_count
 
 
 def plot_gene_pair_retention(
@@ -235,6 +288,8 @@ def write_rna_gene_qc_report(
     parent1_label,
     parent2_label,
     histogram_bins,
+    depth_curve_color,
+    depth_curve_alpha,
 ):
     page_capacity = rows * columns
     sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
@@ -248,15 +303,6 @@ def write_rna_gene_qc_report(
             figsize=(10, 8),
             constrained_layout=True,
         )
-        plotted = pooled.loc[pooled["total_count"] >= min_total_count]
-        plotted_count = len(plotted)
-        print(
-            f"pooled plots minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}",
-            file=sys.stderr,
-        )
-        if plotted_count == 0:
-            print("WARNING: no pooled gene pairs meet the selected minimum total count", file=sys.stderr)
-
         panel_a_plotted_count = plot_pooled_parental_fraction_histogram(
             axes[0, 0],
             pooled,
@@ -278,12 +324,18 @@ def write_rna_gene_qc_report(
             f"Panel B pooled positive-count gene pairs: {panel_b_plotted_count}",
             file=sys.stderr,
         )
-        plot_total_count_imbalance_scatter(
-            axes[1, 0],
-            plotted,
-            min_total_count,
-            plotted_count,
-            parent1_label,
+        panel_c_included_count, panel_c_skipped_count = (
+            plot_per_library_cumulative_depth_curves(
+                axes[1, 0],
+                tables,
+                depth_curve_color,
+                depth_curve_alpha,
+            )
+        )
+        print(
+            "Panel C libraries with gene pairs having total count > 0: "
+            f"{panel_c_included_count}; skipped libraries: {panel_c_skipped_count}",
+            file=sys.stderr,
         )
         plot_gene_pair_retention(
             axes[1, 1],
