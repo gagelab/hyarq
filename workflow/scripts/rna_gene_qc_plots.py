@@ -89,39 +89,51 @@ def plot_pooled_parental_fraction_histogram(
     return plotted_count
 
 
-def plot_parent_count_scatter(
+def plot_parent_count_hexbin(
     ax,
-    plotted,
-    min_total_count,
-    plotted_count,
+    pooled,
     parent1_label,
     parent2_label,
 ):
-    both_positive = plotted.loc[(plotted["parent1_count"] > 0) & (plotted["parent2_count"] > 0)]
-    both_positive_count = len(both_positive)
-    if both_positive_count > 0:
-        x = both_positive["parent1_count"]
-        y = both_positive["parent2_count"]
-        ax.scatter(x, y, s=16, alpha=0.5, edgecolors="none", rasterized=True)
-        max_count = max(x.max(), y.max())
-        axis_limit = 1.05 * max_count
-        ax.set_xscale("log", base=10)
-        ax.set_yscale("log", base=10)
-        ax.xaxis.set_major_locator(LogLocator(base=10))
-        ax.yaxis.set_major_locator(LogLocator(base=10))
-        ax.xaxis.set_major_formatter(LogFormatterMathtext(base=10))
-        ax.yaxis.set_major_formatter(LogFormatterMathtext(base=10))
-        ax.xaxis.set_minor_formatter(NullFormatter())
-        ax.yaxis.set_minor_formatter(NullFormatter())
-        ax.set_xlim(1, axis_limit)
-        ax.set_ylim(1, axis_limit)
-        ax.plot([1, axis_limit], [1, axis_limit], linestyle="--", color="black", linewidth=1)
-        ax.set_aspect("equal", adjustable="box")
+    plotted = pooled.loc[pooled["total_count"] > 0]
+    plotted_count = len(plotted)
+
+    if plotted_count > 0:
+        x = np.log2(plotted["parent1_count"] + 1)
+        y = np.log2(plotted["parent2_count"] + 1)
+        axis_limit = 1.05 * max(x.max(), y.max())
+        hexbin_collection = ax.hexbin(
+            x,
+            y,
+            gridsize=45,
+            mincnt=1,
+            bins="log",
+            cmap="viridis",
+            linewidths=0,
+            extent=(0, axis_limit, 0, axis_limit),
+            zorder=2,
+        )
+        colorbar = ax.figure.colorbar(
+            hexbin_collection,
+            ax=ax,
+            pad=0.02,
+        )
+        colorbar.set_label("Gene pairs per hexagon (log scale)")
+        ax.plot(
+            [0, axis_limit],
+            [0, axis_limit],
+            linestyle="--",
+            color="black",
+            linewidth=1,
+            zorder=3,
+        )
+        ax.set_xlim(0, axis_limit)
+        ax.set_ylim(0, axis_limit)
     else:
         ax.text(
             0.5,
             0.5,
-            "No gene pairs have positive counts\nfor both parents",
+            "No pooled gene pairs have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -129,12 +141,13 @@ def plot_parent_count_scatter(
         )
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
-    ax.set_xlabel(f"{parent1_label} count")
-    ax.set_ylabel(f"{parent2_label} count")
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel(f"log2({parent1_label} count + 1)")
+    ax.set_ylabel(f"log2({parent2_label} count + 1)")
     ax.set_title(
-        f"{parent1_label} count vs {parent2_label} count\nMinimum total count: {min_total_count}; both-positive gene pairs: {both_positive_count}",
-        fontsize=9,
+        f"B. Parental counts per gene pair\nGene pairs with total count > 0: {plotted_count:,}"
     )
+    return plotted_count
 
 
 def plot_total_count_imbalance_scatter(
@@ -255,13 +268,15 @@ def write_rna_gene_qc_report(
             f"Panel A pooled positive-count gene pairs: {panel_a_plotted_count}",
             file=sys.stderr,
         )
-        plot_parent_count_scatter(
+        panel_b_plotted_count = plot_parent_count_hexbin(
             axes[0, 1],
-            plotted,
-            min_total_count,
-            plotted_count,
+            pooled,
             parent1_label,
             parent2_label,
+        )
+        print(
+            f"Panel B pooled positive-count gene pairs: {panel_b_plotted_count}",
+            file=sys.stderr,
         )
         plot_total_count_imbalance_scatter(
             axes[1, 0],
