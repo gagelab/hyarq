@@ -19,18 +19,75 @@ def plot_color(value):
     raise argparse.ArgumentTypeError("must be a valid matplotlib color")
 
 
+def draw_two_color_parental_fraction_histogram(
+    ax,
+    fractions,
+    bins,
+    histogram_colors,
+):
+    counts, bin_edges = np.histogram(fractions, bins=bins)
+    bin_widths = np.diff(bin_edges)
+    bin_midpoints = bin_edges[:-1] + bin_widths / 2
+    bar_colors = [
+        histogram_colors[0] if midpoint < 0.5 else histogram_colors[1]
+        for midpoint in bin_midpoints
+    ]
+    ax.bar(
+        bin_edges[:-1],
+        counts,
+        width=bin_widths,
+        align="edge",
+        color=bar_colors,
+        linewidth=0,
+    )
+
+
+def add_parental_shift_labels(
+    ax,
+    histogram_colors,
+    parent1_label,
+    parent2_label,
+):
+    ax.text(
+        0.02,
+        0.96,
+        parent2_label,
+        color=histogram_colors[0],
+        fontsize=8,
+        ha="left",
+        va="top",
+        transform=ax.transAxes,
+    )
+    ax.text(
+        0.98,
+        0.96,
+        parent1_label,
+        color=histogram_colors[1],
+        fontsize=8,
+        ha="right",
+        va="top",
+        transform=ax.transAxes,
+    )
+
+
 def plot_parental_fraction_histogram(
     ax,
     fractions,
     min_total_count,
     plotted_count,
-    histogram_color,
+    histogram_colors,
     parent1_label,
+    parent2_label,
     panel_title=None,
 ):
     bins = [i / 20 for i in range(21)]
     if plotted_count > 0:
-        ax.hist(fractions, bins=bins, color=histogram_color)
+        draw_two_color_parental_fraction_histogram(
+            ax,
+            fractions,
+            bins,
+            histogram_colors,
+        )
     else:
         ax.text(
             0.5,
@@ -41,9 +98,15 @@ def plot_parental_fraction_histogram(
             transform=ax.transAxes,
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
+    add_parental_shift_labels(
+        ax,
+        histogram_colors,
+        parent1_label,
+        parent2_label,
+    )
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
-    ax.set_xlabel(f"{parent1_label} fraction")
+    ax.set_xlabel(f"{parent1_label} count proportion")
     ax.set_ylabel("Gene pairs")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     subtitle = f"Minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}"
@@ -55,8 +118,9 @@ def plot_parental_fraction_histogram(
 def plot_pooled_parental_fraction_histogram(
     ax,
     pooled,
-    histogram_color,
+    histogram_colors,
     parent1_label,
+    parent2_label,
     histogram_bins,
 ):
     plotted = pooled.loc[pooled["total_count"] > 0]
@@ -65,10 +129,11 @@ def plot_pooled_parental_fraction_histogram(
     if plotted_count > 0:
         fractions = plotted["parent1_count"] / plotted["total_count"]
         bins = np.linspace(0.0, 1.0, histogram_bins + 1)
-        ax.hist(
+        draw_two_color_parental_fraction_histogram(
+            ax,
             fractions,
-            bins=bins,
-            color=histogram_color,
+            bins,
+            histogram_colors,
         )
     else:
         ax.text(
@@ -81,6 +146,12 @@ def plot_pooled_parental_fraction_histogram(
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
 
+    add_parental_shift_labels(
+        ax,
+        histogram_colors,
+        parent1_label,
+        parent2_label,
+    )
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
     ax.set_xlabel(f"{parent1_label} count proportion")
@@ -326,7 +397,7 @@ def write_rna_gene_qc_report(
     pooled,
     path,
     min_total_count,
-    histogram_color,
+    histogram_colors,
     rows,
     columns,
     parent1_label,
@@ -352,8 +423,9 @@ def write_rna_gene_qc_report(
         panel_a_plotted_count = plot_pooled_parental_fraction_histogram(
             axes[0, 0],
             pooled,
-            histogram_color=histogram_color,
+            histogram_colors=histogram_colors,
             parent1_label=parent1_label,
+            parent2_label=parent2_label,
             histogram_bins=histogram_bins,
         )
         print(
@@ -428,8 +500,9 @@ def write_rna_gene_qc_report(
                     fractions,
                     min_total_count,
                     plotted_count,
-                    histogram_color=histogram_color,
+                    histogram_colors=histogram_colors,
                     parent1_label=parent1_label,
+                    parent2_label=parent2_label,
                     panel_title=library_id,
                 )
             for ax in axes.flat[len(page_items):]:

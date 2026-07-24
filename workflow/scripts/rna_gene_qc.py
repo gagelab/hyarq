@@ -281,10 +281,15 @@ def main():
         help="Minimum total count used by threshold-dependent plots; Panel A always includes pooled gene pairs with total_count > 0.",
     )
     ap.add_argument(
-        "--histogram-color",
+        "--histogram-colors",
+        nargs=2,
         type=plot_color,
-        default="tab:blue",
-        help="Color used for parental count proportion histogram bars.",
+        default=("#44C3D0", "#CD85B9"),
+        metavar=("LEFT_COLOR", "RIGHT_COLOR"),
+        help=(
+            "Colors used for parental count proportions below 0.5 "
+            "(LEFT_COLOR) and at or above 0.5 (RIGHT_COLOR)."
+        ),
     )
     ap.add_argument(
         "--histogram-bins",
@@ -378,7 +383,7 @@ def main():
         pooled,
         Path(args.report),
         args.min_total_count,
-        args.histogram_color,
+        args.histogram_colors,
         args.sample_histogram_rows,
         args.sample_histogram_columns,
         parent1_label=args.parent1_label,
