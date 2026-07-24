@@ -23,14 +23,19 @@ EXPECTED_COLUMNS = [
 ]
 COUNT_COLUMNS = ["parent1_count", "parent2_count", "total_count"]
 SUMMARY_COLUMNS = [
-    "library_id",
+    "sample_id",
     "total_gene_pairs",
-    "gene_pairs_with_counts",
-    "parent1_only_gene_pairs",
-    "parent2_only_gene_pairs",
-    "total_count",
-    "overall_parent1_fraction",
-    "median_gene_pair_parent1_fraction",
+    "gene_pairs_with_any_count",
+    "gene_pairs_with_parent1_count_only",
+    "gene_pairs_with_parent2_count_only",
+    "gene_pairs_with_both_parent_counts_nonzero",
+    "total_parental_count",
+    "overall_parent1_proportion",
+    "median_gene_pair_parent1_proportion",
+    *[
+        f"retained_ge_{threshold}"
+        for threshold in RNA_RETENTION_THRESHOLDS
+    ],
 ]
 PAIRED_COLUMNS = ["parent1_gene_id", "parent2_gene_id"]
 RETENTION_COLUMNS = [
@@ -156,24 +161,58 @@ def fraction_value(value):
 
 def summarize_table(library_id, table):
     counted = table["total_count"] > 0
-    total_count = int(table["total_count"].sum())
+    gene_pairs_with_any_count = int(counted.sum())
+    gene_pairs_with_parent1_count_only = int(
+        ((table["parent1_count"] > 0) & (table["parent2_count"] == 0)).sum()
+    )
+    gene_pairs_with_parent2_count_only = int(
+        ((table["parent1_count"] == 0) & (table["parent2_count"] > 0)).sum()
+    )
+    gene_pairs_with_both_parent_counts_nonzero = int(
+        ((table["parent1_count"] > 0) & (table["parent2_count"] > 0)).sum()
+    )
+    total_parental_count = int(table["total_count"].sum())
 
     if counted.any():
-        overall_parent1_fraction = table["parent1_count"].sum() / total_count
-        median_parent1_fraction = (table.loc[counted, "parent1_count"] / table.loc[counted, "total_count"]).median()
+        overall_parent1_proportion = (
+            table["parent1_count"].sum() / total_parental_count
+        )
+        median_gene_pair_parent1_proportion = (
+            table.loc[counted, "parent1_count"]
+            / table.loc[counted, "total_count"]
+        ).median()
     else:
-        overall_parent1_fraction = pd.NA
-        median_parent1_fraction = pd.NA
+        overall_parent1_proportion = pd.NA
+        median_gene_pair_parent1_proportion = pd.NA
+
+    retained_counts = {
+        f"retained_ge_{threshold}": int(
+            (table["total_count"] >= threshold).sum()
+        )
+        for threshold in RNA_RETENTION_THRESHOLDS
+    }
 
     return {
-        "library_id": library_id,
+        "sample_id": library_id,
         "total_gene_pairs": len(table),
-        "gene_pairs_with_counts": int(counted.sum()),
-        "parent1_only_gene_pairs": int(((table["parent1_count"] > 0) & (table["parent2_count"] == 0)).sum()),
-        "parent2_only_gene_pairs": int(((table["parent1_count"] == 0) & (table["parent2_count"] > 0)).sum()),
-        "total_count": total_count,
-        "overall_parent1_fraction": fraction_value(overall_parent1_fraction),
-        "median_gene_pair_parent1_fraction": fraction_value(median_parent1_fraction),
+        "gene_pairs_with_any_count": gene_pairs_with_any_count,
+        "gene_pairs_with_parent1_count_only": (
+            gene_pairs_with_parent1_count_only
+        ),
+        "gene_pairs_with_parent2_count_only": (
+            gene_pairs_with_parent2_count_only
+        ),
+        "gene_pairs_with_both_parent_counts_nonzero": (
+            gene_pairs_with_both_parent_counts_nonzero
+        ),
+        "total_parental_count": total_parental_count,
+        "overall_parent1_proportion": fraction_value(
+            overall_parent1_proportion
+        ),
+        "median_gene_pair_parent1_proportion": fraction_value(
+            median_gene_pair_parent1_proportion
+        ),
+        **retained_counts,
     }
 
 
@@ -188,7 +227,7 @@ def build_pooled_table(tables):
 
 
 def summarize_pooled(pooled):
-    return summarize_table("pooled_all_libraries", pooled)
+    return summarize_table("all_samples", pooled)
 
 
 def build_retention_table(library_ids, tables, thresholds):
