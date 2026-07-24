@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from rna_gene_qc_plots import (
+    RNA_RETENTION_THRESHOLDS,
     plot_color,
     write_rna_gene_qc_report,
 )
@@ -32,6 +33,12 @@ SUMMARY_COLUMNS = [
     "median_gene_pair_parent1_fraction",
 ]
 PAIRED_COLUMNS = ["parent1_gene_id", "parent2_gene_id"]
+RETENTION_COLUMNS = [
+    "library_id",
+    "minimum_total_count",
+    "retained_gene_pairs",
+    "retained_percent",
+]
 
 
 class ErrorParser(argparse.ArgumentParser):
@@ -184,16 +191,49 @@ def summarize_pooled(pooled):
     return summarize_table("pooled_all_libraries", pooled)
 
 
+def build_retention_table(library_ids, tables, thresholds):
+    rows = []
+    for library_id, table in zip(library_ids, tables):
+        total_gene_pairs = len(table)
+        for threshold in thresholds:
+            retained_gene_pairs = int((table["total_count"] >= threshold).sum())
+            if total_gene_pairs == 0:
+                retained_percent = pd.NA
+            else:
+                retained_percent = 100 * retained_gene_pairs / total_gene_pairs
+            rows.append(
+                {
+                    "library_id": library_id,
+                    "minimum_total_count": threshold,
+                    "retained_gene_pairs": retained_gene_pairs,
+                    "retained_percent": retained_percent,
+                }
+            )
+    return pd.DataFrame(rows, columns=RETENTION_COLUMNS)
+
+
 def write_summary(rows, path):
     summary = pd.DataFrame(rows, columns=SUMMARY_COLUMNS)
     path.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(path, sep="\t", index=False, lineterminator="\n")
 
 
+def write_retention(retention, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    retention.to_csv(
+        path,
+        sep="\t",
+        index=False,
+        lineterminator="\n",
+        na_rep="NA",
+    )
+
+
 def main():
     ap = ErrorParser(description="Summarize RNA gene count QC metrics.")
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
+    ap.add_argument("--retention", required=True)
     ap.add_argument("--report", required=True)
     ap.add_argument(
         "--min-total-count",
@@ -224,6 +264,27 @@ def main():
         type=positive_unit_float,
         default=0.15,
         help="Transparency used for per-library cumulative gene-pair depth curves; must be greater than 0 and at most 1.",
+    )
+    ap.add_argument(
+        "--retention-colors",
+        nargs=6,
+        type=plot_color,
+        default=(
+            "tab:blue",
+            "tab:orange",
+            "tab:green",
+            "tab:red",
+            "tab:purple",
+            "tab:brown",
+        ),
+        metavar=tuple(
+            f"COLOR_{threshold}"
+            for threshold in RNA_RETENTION_THRESHOLDS
+        ),
+        help=(
+            "Colors used for retention thresholds "
+            f"{', '.join(map(str, RNA_RETENTION_THRESHOLDS))}."
+        ),
     )
     ap.add_argument("--sample-histogram-columns", type=positive_integer, default=3)
     ap.add_argument("--sample-histogram-rows", type=positive_integer, default=2)
@@ -266,6 +327,12 @@ def main():
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
     rows.append(summarize_pooled(pooled))
     write_summary(rows, Path(args.summary))
+    retention = build_retention_table(
+        library_ids,
+        tables,
+        RNA_RETENTION_THRESHOLDS,
+    )
+    write_retention(retention, Path(args.retention))
     write_rna_gene_qc_report(
         library_ids,
         tables,
@@ -280,6 +347,8 @@ def main():
         histogram_bins=args.histogram_bins,
         depth_curve_color=args.depth_curve_color,
         depth_curve_alpha=args.depth_curve_alpha,
+        retention=retention,
+        retention_colors=args.retention_colors,
     )
     return 0
 

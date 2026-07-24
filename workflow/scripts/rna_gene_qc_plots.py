@@ -6,8 +6,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.colors import is_color_like
+from matplotlib.colors import is_color_like, to_rgba
 from matplotlib.ticker import MaxNLocator
+
+
+RNA_RETENTION_THRESHOLDS = (1, 5, 10, 20, 30, 60)
 
 
 def plot_color(value):
@@ -242,38 +245,79 @@ def plot_per_library_cumulative_depth_curves(
 
 def plot_gene_pair_retention(
     ax,
-    pooled,
+    retention,
+    retention_colors,
 ):
-    total_gene_pairs = len(pooled)
-    if total_gene_pairs == 0:
+    positions = np.arange(1, len(RNA_RETENTION_THRESHOLDS) + 1)
+    distributions = []
+    for threshold in RNA_RETENTION_THRESHOLDS:
+        values = (
+            retention.loc[
+                retention["minimum_total_count"] == threshold,
+                "retained_percent",
+            ]
+            .dropna()
+            .astype(float)
+            .to_numpy()
+        )
+        distributions.append(values[np.isfinite(values)])
+
+    if not any(len(values) > 0 for values in distributions):
         ax.text(
             0.5,
             0.5,
-            "No gene pairs available",
+            "No gene-pair retention values available",
             ha="center",
             va="center",
             transform=ax.transAxes,
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 100)
     else:
-        thresholds = [1, 5, 10, 20, 50, 100, 200, 500, 1000]
-        positions = range(len(thresholds))
-        retained_percentages = [
-            100 * (pooled["total_count"] >= threshold).sum() / total_gene_pairs
-            for threshold in thresholds
-        ]
-        ax.plot(positions, retained_percentages, marker="o")
-        ax.set_xticks(positions)
-        ax.set_xticklabels(thresholds)
-        ax.set_ylim(0, 100)
-    ax.set_xlabel("Minimum total count")
+        for position, values, color in zip(
+            positions,
+            distributions,
+            retention_colors,
+        ):
+            if len(values) == 0:
+                continue
+            ax.boxplot(
+                [values],
+                positions=[position],
+                widths=0.55,
+                patch_artist=True,
+                showfliers=False,
+                notch=False,
+                manage_ticks=False,
+                boxprops={
+                    "facecolor": to_rgba(color, alpha=0.2),
+                    "edgecolor": color,
+                },
+                whiskerprops={"color": color},
+                capprops={"color": color},
+                medianprops={"color": "black"},
+            )
+            if len(values) == 1:
+                jitter = np.zeros(1)
+            else:
+                jitter = np.linspace(-0.12, 0.12, len(values))
+            ax.scatter(
+                position + jitter,
+                values,
+                color=color,
+                marker="o",
+                s=16,
+                alpha=0.65,
+                edgecolors="none",
+                zorder=3,
+            )
+
+    ax.set_xlim(0.5, len(RNA_RETENTION_THRESHOLDS) + 0.5)
+    ax.set_ylim(0, 100)
+    ax.set_xticks(positions)
+    ax.set_xticklabels(RNA_RETENTION_THRESHOLDS)
+    ax.set_xlabel("Minimum total count per gene pair")
     ax.set_ylabel("Retained gene pairs (%)")
-    ax.set_title(
-        f"Gene-pair retention across count thresholds\nAll pooled gene pairs: {total_gene_pairs}",
-        fontsize=9,
-    )
+    ax.set_title("D. Across-library gene-pair retention")
 
 
 def write_rna_gene_qc_report(
@@ -290,6 +334,8 @@ def write_rna_gene_qc_report(
     histogram_bins,
     depth_curve_color,
     depth_curve_alpha,
+    retention,
+    retention_colors,
 ):
     page_capacity = rows * columns
     sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
@@ -339,7 +385,15 @@ def write_rna_gene_qc_report(
         )
         plot_gene_pair_retention(
             axes[1, 1],
-            pooled,
+            retention,
+            retention_colors,
+        )
+        retention_library_count = retention["library_id"].nunique()
+        print(
+            "Panel D retention libraries: "
+            f"{retention_library_count}; thresholds: "
+            f"{','.join(map(str, RNA_RETENTION_THRESHOLDS))}",
+            file=sys.stderr,
         )
         fig.suptitle("Pooled RNA gene QC")
         pdf.savefig(fig)
