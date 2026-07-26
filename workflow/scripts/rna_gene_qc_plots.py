@@ -11,6 +11,8 @@ from matplotlib.ticker import MaxNLocator
 
 
 RNA_RETENTION_THRESHOLDS = (1, 5, 10, 20, 30, 60)
+SAMPLE_HEXBIN_GRIDSIZE = 45
+SAMPLE_HEXBIN_CMAP = "viridis"
 
 
 def plot_color(value):
@@ -73,7 +75,6 @@ def add_parental_shift_labels(
 def plot_parental_fraction_histogram(
     ax,
     fractions,
-    min_total_count,
     plotted_count,
     histogram_colors,
     parent1_label,
@@ -92,7 +93,7 @@ def plot_parental_fraction_histogram(
         ax.text(
             0.5,
             0.5,
-            "No gene pairs meet the selected\nminimum total count",
+            "No gene pairs have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -109,7 +110,10 @@ def plot_parental_fraction_histogram(
     ax.set_xlabel(f"{parent1_label} count proportion")
     ax.set_ylabel("Gene pairs")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    subtitle = f"Minimum total count: {min_total_count}; plotted gene pairs: {plotted_count}"
+    subtitle = (
+        "Gene pairs with total count > 0: "
+        f"{plotted_count:,}"
+    )
     if panel_title is not None:
         subtitle = f"{panel_title}\n{subtitle}"
     ax.set_title(subtitle, fontsize=9)
@@ -463,3 +467,252 @@ def write_rna_gene_qc_report(
         pdf.savefig(fig)
         plt.close(fig)
     print("RNA gene QC report pages written: 1", file=sys.stderr)
+
+
+def prepare_sample_scatter_arrays(table):
+    plotted = table.loc[table["total_count"] > 0]
+    x = np.log2(plotted["parent1_count"] + 1).to_numpy()
+    y = np.log2(plotted["parent2_count"] + 1).to_numpy()
+    return x, y
+
+
+def plot_sample_parent_count_hexbin(
+    fig,
+    ax,
+    library_id,
+    table,
+    parent1_label,
+    parent2_label,
+):
+    x, y = prepare_sample_scatter_arrays(table)
+    plotted_count = len(x)
+    axis_max = 1.0
+    if len(x) > 0:
+        axis_max = max(
+            axis_max,
+            float(np.max(x)),
+            float(np.max(y)),
+        )
+        extent = (
+            0,
+            axis_max,
+            0,
+            axis_max,
+        )
+        hexbin_collection = ax.hexbin(
+            x,
+            y,
+            gridsize=SAMPLE_HEXBIN_GRIDSIZE,
+            mincnt=1,
+            bins="log",
+            cmap=SAMPLE_HEXBIN_CMAP,
+            linewidths=0,
+            extent=extent,
+            zorder=2,
+        )
+        colorbar = fig.colorbar(
+            hexbin_collection,
+            ax=ax,
+            fraction=0.05,
+            pad=0.02,
+        )
+        colorbar.set_label(
+            "Gene pairs per hexagon (log scale)"
+        )
+    else:
+        ax.text(
+            0.5,
+            0.5,
+            "No gene pairs have\na positive total count",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
+            zorder=4,
+        )
+
+    ax.plot(
+        [0, axis_max],
+        [0, axis_max],
+        linestyle="--",
+        color="black",
+        linewidth=1,
+        zorder=3,
+    )
+    ax.set_xlim(0, axis_max)
+    ax.set_ylim(0, axis_max)
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel(f"log2({parent1_label} count + 1)")
+    ax.set_ylabel(f"log2({parent2_label} count + 1)")
+    ax.set_title(
+        f"{library_id}\n"
+        "Gene pairs with total count > 0: "
+        f"{plotted_count:,}",
+        fontsize=9,
+    )
+
+
+def plot_sample_parental_fraction_histogram(
+    ax,
+    library_id,
+    table,
+    histogram_colors,
+    parent1_label,
+    parent2_label,
+):
+    plotted = table.loc[table["total_count"] > 0]
+    plotted_count = len(plotted)
+    fractions = plotted["parent1_count"] / plotted["total_count"]
+    plot_parental_fraction_histogram(
+        ax,
+        fractions,
+        plotted_count,
+        histogram_colors=histogram_colors,
+        parent1_label=parent1_label,
+        parent2_label=parent2_label,
+        panel_title=library_id,
+    )
+
+
+def write_rna_gene_qc_sample_report(
+    library_ids,
+    tables,
+    path,
+    plot_types,
+    histogram_colors,
+    parent1_label,
+    parent2_label,
+):
+    sample_items = list(zip(library_ids, tables))
+    if plot_types == ("histogram",):
+        page_capacity = 8
+    elif plot_types == ("scatter",):
+        page_capacity = 8
+    else:
+        page_capacity = 4
+    page_count = (
+        len(sample_items) + page_capacity - 1
+    ) // page_capacity
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with PdfPages(path) as pdf:
+        for page_index in range(page_count):
+            start = page_index * page_capacity
+            page_items = sample_items[
+                start:start + page_capacity
+            ]
+
+            if len(plot_types) == 1:
+                if plot_types == ("histogram",):
+                    figure_size = (16, 7)
+                else:
+                    figure_size = (20, 8)
+                fig, axes = plt.subplots(
+                    2,
+                    4,
+                    figsize=figure_size,
+                    constrained_layout=True,
+                    squeeze=False,
+                )
+                for ax, (library_id, table) in zip(
+                    axes.flat,
+                    page_items,
+                ):
+                    if plot_types == ("histogram",):
+                        plot_sample_parental_fraction_histogram(
+                            ax,
+                            library_id,
+                            table,
+                            histogram_colors,
+                            parent1_label,
+                            parent2_label,
+                        )
+                    else:
+                        plot_sample_parent_count_hexbin(
+                            fig,
+                            ax,
+                            library_id,
+                            table,
+                            parent1_label,
+                            parent2_label,
+                        )
+                for ax in axes.flat[len(page_items):]:
+                    ax.set_visible(False)
+                if plot_types == ("histogram",):
+                    fig.suptitle("RNA gene parental fractions")
+                else:
+                    fig.suptitle("RNA gene parental counts")
+            else:
+                fig, axes = plt.subplots(
+                    2,
+                    4,
+                    figsize=(20, 8),
+                    constrained_layout=True,
+                    squeeze=False,
+                )
+                used_positions = set()
+                for item_index, (library_id, table) in enumerate(
+                    page_items
+                ):
+                    row_index = item_index // 2
+                    histogram_column = (
+                        item_index % 2
+                    ) * 2
+                    hexbin_column = histogram_column + 1
+                    histogram_ax = axes[
+                        row_index,
+                        histogram_column,
+                    ]
+                    hexbin_ax = axes[
+                        row_index,
+                        hexbin_column,
+                    ]
+                    used_positions.update({
+                        (
+                            row_index,
+                            histogram_column,
+                        ),
+                        (
+                            row_index,
+                            hexbin_column,
+                        ),
+                    })
+                    plot_sample_parental_fraction_histogram(
+                        histogram_ax,
+                        library_id,
+                        table,
+                        histogram_colors,
+                        parent1_label,
+                        parent2_label,
+                    )
+                    plot_sample_parent_count_hexbin(
+                        fig,
+                        hexbin_ax,
+                        library_id,
+                        table,
+                        parent1_label,
+                        parent2_label,
+                    )
+                for row_index in range(2):
+                    for column_index in range(4):
+                        if (
+                            row_index,
+                            column_index,
+                        ) not in used_positions:
+                            axes[
+                                row_index,
+                                column_index,
+                            ].set_visible(False)
+                fig.suptitle("RNA gene sample QC")
+
+            pdf.savefig(fig)
+            plt.close(fig)
+
+    rendered_plot_types = ",".join(plot_types)
+    print(
+        "RNA gene QC sample report: "
+        f"libraries={len(sample_items)}; "
+        f"plot types={rendered_plot_types}; "
+        f"pages written={page_count}",
+        file=sys.stderr,
+    )

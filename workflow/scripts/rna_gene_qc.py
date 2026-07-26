@@ -11,6 +11,7 @@ from rna_gene_qc_plots import (
     RNA_RETENTION_THRESHOLDS,
     plot_color,
     write_rna_gene_qc_report,
+    write_rna_gene_qc_sample_report,
 )
 
 
@@ -268,17 +269,74 @@ def write_retention(retention, path):
     )
 
 
+def resolve_sample_libraries(
+    requested_library_ids,
+    library_ids,
+    tables,
+):
+    if "all" in library_ids:
+        raise ValueError(
+            "library ID 'all' is reserved for --sample-libraries"
+        )
+    if requested_library_ids == ["all"]:
+        return list(library_ids), list(tables)
+    if "all" in requested_library_ids:
+        raise ValueError(
+            "--sample-libraries cannot combine 'all' "
+            "with specific library IDs"
+        )
+
+    seen = set()
+    duplicate_library_ids = []
+    for library_id in requested_library_ids:
+        if (
+            library_id in seen
+            and library_id not in duplicate_library_ids
+        ):
+            duplicate_library_ids.append(library_id)
+        seen.add(library_id)
+    if duplicate_library_ids:
+        raise ValueError(
+            "--sample-libraries contains duplicate library IDs: "
+            f"{', '.join(duplicate_library_ids)}"
+        )
+
+    unknown_library_ids = [
+        library_id
+        for library_id in requested_library_ids
+        if library_id not in library_ids
+    ]
+    if unknown_library_ids:
+        raise ValueError(
+            "--sample-libraries contains unknown library IDs: "
+            f"{', '.join(unknown_library_ids)}"
+        )
+
+    table_by_library_id = dict(zip(library_ids, tables))
+    selected_tables = [
+        table_by_library_id[library_id]
+        for library_id in requested_library_ids
+    ]
+    return list(requested_library_ids), selected_tables
+
+
 def main():
     ap = ErrorParser(description="Summarize RNA gene count QC metrics.")
     ap.add_argument("--count-tables", nargs="+", required=True)
     ap.add_argument("--summary", required=True)
     ap.add_argument("--retention", required=True)
     ap.add_argument("--report", required=True)
+    ap.add_argument("--sample-report", default=None)
     ap.add_argument(
-        "--min-total-count",
-        type=positive_integer,
-        default=1,
-        help="Minimum total count used by threshold-dependent plots; Panel A always includes pooled gene pairs with total_count > 0.",
+        "--sample-libraries",
+        nargs="+",
+        default=None,
+    )
+    ap.add_argument(
+        "--sample-plot-types",
+        nargs="+",
+        choices=("histogram", "scatter"),
+        default=None,
     )
     ap.add_argument(
         "--histogram-colors",
@@ -334,6 +392,39 @@ def main():
     ap.add_argument("--parent2-label", default="Parent2", help="Parent2 name displayed in the report.")
     args = ap.parse_args()
 
+    sample_option_values = (
+        args.sample_report,
+        args.sample_libraries,
+        args.sample_plot_types,
+    )
+    if any(value is not None for value in sample_option_values) and not all(
+        value is not None for value in sample_option_values
+    ):
+        ap.error(
+            "--sample-report, --sample-libraries, and "
+            "--sample-plot-types must be supplied together"
+        )
+    if args.sample_report is not None:
+        if Path(args.sample_report).resolve() == Path(args.report).resolve():
+            ap.error("--sample-report must differ from --report")
+        duplicate_plot_types = [
+            plot_type
+            for index, plot_type in enumerate(
+                args.sample_plot_types
+            )
+            if plot_type in args.sample_plot_types[:index]
+        ]
+        if duplicate_plot_types:
+            ap.error(
+                "--sample-plot-types contains duplicate values: "
+                f"{', '.join(duplicate_plot_types)}"
+            )
+        args.sample_plot_types = [
+            plot_type
+            for plot_type in ("histogram", "scatter")
+            if plot_type in args.sample_plot_types
+        ]
+
     if not args.count_tables:
         return fail(["at least one count table is required"])
 
@@ -365,6 +456,21 @@ def main():
     if errors:
         return fail(errors)
 
+    selected_sample_library_ids = None
+    selected_sample_tables = None
+    if args.sample_report is not None:
+        try:
+            (
+                selected_sample_library_ids,
+                selected_sample_tables,
+            ) = resolve_sample_libraries(
+                args.sample_libraries,
+                library_ids,
+                tables,
+            )
+        except ValueError as exc:
+            ap.error(str(exc))
+
     pooled = build_pooled_table(tables)
     rows = [summarize_table(library_id, table) for library_id, table in zip(library_ids, tables)]
     rows.append(summarize_pooled(pooled))
@@ -388,6 +494,16 @@ def main():
         retention=retention,
         retention_colors=args.retention_colors,
     )
+    if args.sample_report is not None:
+        write_rna_gene_qc_sample_report(
+            selected_sample_library_ids,
+            selected_sample_tables,
+            Path(args.sample_report),
+            tuple(args.sample_plot_types),
+            args.histogram_colors,
+            args.parent1_label,
+            args.parent2_label,
+        )
     return 0
 
 
