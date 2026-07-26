@@ -392,14 +392,10 @@ def plot_gene_pair_retention(
 
 
 def write_rna_gene_qc_report(
-    library_ids,
     tables,
     pooled,
     path,
-    min_total_count,
     histogram_colors,
-    rows,
-    columns,
     parent1_label,
     parent2_label,
     histogram_bins,
@@ -408,10 +404,6 @@ def write_rna_gene_qc_report(
     retention,
     retention_colors,
 ):
-    page_capacity = rows * columns
-    sample_page_count = (len(library_ids) + page_capacity - 1) // page_capacity
-    total_page_count = 1 + sample_page_count
-
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
         fig, axes = plt.subplots(
@@ -467,50 +459,7 @@ def write_rna_gene_qc_report(
             f"{','.join(map(str, RNA_RETENTION_THRESHOLDS))}",
             file=sys.stderr,
         )
-        fig.suptitle("Pooled RNA gene QC")
+        fig.suptitle("RNA gene QC")
         pdf.savefig(fig)
         plt.close(fig)
-
-        sample_items = list(zip(library_ids, tables))
-        for page_index in range(sample_page_count):
-            start = page_index * page_capacity
-            page_items = sample_items[start:start + page_capacity]
-            page_columns = min(columns, len(page_items))
-            page_rows = (len(page_items) + page_columns - 1) // page_columns
-            fig, axes = plt.subplots(
-                page_rows,
-                page_columns,
-                figsize=(page_columns * 4, page_rows * 3),
-                constrained_layout=True,
-                squeeze=False,
-            )
-            fig.suptitle("RNA gene parental fractions")
-            for ax, item in zip(axes.flat, page_items):
-                library_id, table = item
-                plotted = table.loc[table["total_count"] >= min_total_count]
-                plotted_count = len(plotted)
-                if plotted_count == 0:
-                    print(
-                        f"WARNING: no gene pairs meet the selected minimum total count for {library_id}",
-                        file=sys.stderr,
-                    )
-                fractions = plotted["parent1_count"] / plotted["total_count"]
-                plot_parental_fraction_histogram(
-                    ax,
-                    fractions,
-                    min_total_count,
-                    plotted_count,
-                    histogram_colors=histogram_colors,
-                    parent1_label=parent1_label,
-                    parent2_label=parent2_label,
-                    panel_title=library_id,
-                )
-            for ax in axes.flat[len(page_items):]:
-                ax.set_visible(False)
-            pdf.savefig(fig)
-            plt.close(fig)
-    print(
-        f"sample histograms minimum total count: {min_total_count}; libraries processed: {len(library_ids)}; sample pages written: {sample_page_count}",
-        file=sys.stderr,
-    )
-    print(f"RNA gene QC report pages written: {total_page_count}", file=sys.stderr)
+    print("RNA gene QC report pages written: 1", file=sys.stderr)

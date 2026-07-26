@@ -330,8 +330,6 @@ def main():
             f"{', '.join(map(str, RNA_RETENTION_THRESHOLDS))}."
         ),
     )
-    ap.add_argument("--sample-histogram-columns", type=positive_integer, default=3)
-    ap.add_argument("--sample-histogram-rows", type=positive_integer, default=2)
     ap.add_argument("--parent1-label", default="Parent1", help="Parent1 name displayed in the report.")
     ap.add_argument("--parent2-label", default="Parent2", help="Parent2 name displayed in the report.")
     args = ap.parse_args()
@@ -378,14 +376,10 @@ def main():
     )
     write_retention(retention, Path(args.retention))
     write_rna_gene_qc_report(
-        library_ids,
         tables,
         pooled,
         Path(args.report),
-        args.min_total_count,
         args.histogram_colors,
-        args.sample_histogram_rows,
-        args.sample_histogram_columns,
         parent1_label=args.parent1_label,
         parent2_label=args.parent2_label,
         histogram_bins=args.histogram_bins,
