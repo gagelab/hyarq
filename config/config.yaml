@@ -13,4 +13,14 @@ parents:
 
 rna_gene_pairs: ""
 
+# Optional sample report; disabled by default.
+rna_gene_qc:
+  sample_report:
+    enabled: false
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
 samples: "config/samples.tsv"
