@@ -5,6 +5,7 @@ rule map_rna_star:
         r1=rules.rna_fastp.output.r1,
         r2=rules.rna_fastp.output.r2,
         index=rules.build_star_index.output.index,
+        script=MAP_RNA_STAR_SCRIPT,
     output:
         bam="results/mapping/rna/{library_id}.Aligned.sortedByCoord.out.bam",
         bai="results/mapping/rna/{library_id}.Aligned.sortedByCoord.out.bam.bai",
@@ -16,7 +17,10 @@ rule map_rna_star:
         replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
         reference_id=config["reference_id"],
         outdir="results/mapping/rna",
-    threads: 4
+    threads: get_threads("map_rna_star")
+    resources:
+        mem_mb=get_mem_mb("map_rna_star"),
+        runtime=get_runtime("map_rna_star"),
     conda:
         "../envs/star.yaml"
     log:
@@ -33,7 +37,7 @@ rule map_rna_star:
         SAMPLE={params.sample:q} \
         REP={params.replicate:q} \
         LIBRARY_ID={wildcards.library_id:q} \
-        bash workflow/scripts/map_rna_star.sh > {log:q} 2>&1
+        bash {input.script:q} > {log:q} 2>&1
         """
 
 
@@ -43,6 +47,7 @@ rule count_rna_genes:
         gtf=rules.build_concatenated_reference.output.gtf,
         gene_pairs=config["rna_gene_pairs"],
         validation=rules.validate_rna_gene_pairs.output.report,
+        script=COUNT_RNA_GENES_SCRIPT,
     output:
         gene_counts="results/counts/rna/{library_id}/gene_counts.tsv",
         filter_summary="results/counts/rna/{library_id}/filter_summary.tsv",
@@ -53,7 +58,10 @@ rule count_rna_genes:
         parent2_prefix=config["parents"]["parent2"]["prefix"],
         outdir="results/counts/rna/{library_id}",
         count_tmpdir="results/counts/rna/{library_id}/tmp",
-    threads: 4
+    threads: get_threads("count_rna_genes")
+    resources:
+        mem_mb=get_mem_mb("count_rna_genes"),
+        runtime=get_runtime("count_rna_genes"),
     conda:
         "../envs/rna_counting.yaml"
     log:
@@ -72,5 +80,5 @@ rule count_rna_genes:
         SAMPLE={params.sample:q} \
         REP={params.replicate:q} \
         LIBRARY_ID={wildcards.library_id:q} \
-        bash workflow/scripts/count_rna_genes.sh > {log:q} 2>&1
+        bash {input.script:q} > {log:q} 2>&1
         """

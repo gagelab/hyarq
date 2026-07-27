@@ -13,6 +13,52 @@ parents:
 
 rna_gene_pairs: ""
 
+# Portable per-job requirements. mem_mb is total memory for one job, and
+# runtime is in minutes. Adjust these values for your data and environment.
+# Scheduler queues, partitions, accounts, and submission settings belong in
+# execution profiles, not in this section.
+rule_resources:
+  build_concatenated_reference:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  build_star_index:
+    threads: 8
+    mem_mb: 96000
+    runtime: 720
+  validate_rna_gene_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  raw_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  rna_fastp:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  rna_clean_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  map_rna_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
+  count_rna_genes:
+    threads: 4
+    mem_mb: 16000
+    runtime: 360
+  rna_multiqc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  rna_gene_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+
 # Optional sample report; disabled by default.
 rna_gene_qc:
   sample_report:

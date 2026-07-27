@@ -1,7 +1,108 @@
+from collections.abc import Mapping
+
 import pandas as pd
 
 
 SAMPLE_COLUMNS = ["sample_id", "assay", "replicate", "r1", "r2"]
+
+RULE_RESOURCE_DEFAULTS = {
+    "build_concatenated_reference": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "build_star_index": {
+        "threads": 8,
+        "mem_mb": 96000,
+        "runtime": 720,
+    },
+    "validate_rna_gene_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
+    "raw_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "rna_fastp": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
+    "rna_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "map_rna_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
+    "count_rna_genes": {
+        "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 360,
+    },
+    "rna_multiqc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "rna_gene_qc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+}
+RULE_RESOURCE_FIELDS = frozenset(("threads", "mem_mb", "runtime"))
+
+configured_rule_resources = config.get("rule_resources", {})
+if not isinstance(configured_rule_resources, Mapping):
+    raise ValueError("rule_resources must be a mapping")
+
+RULE_RESOURCES = {
+    rule_name: resource_values.copy()
+    for rule_name, resource_values in RULE_RESOURCE_DEFAULTS.items()
+}
+
+for rule_name, resource_overrides in configured_rule_resources.items():
+    rule_path = f"rule_resources.{rule_name}"
+    if rule_name not in RULE_RESOURCE_DEFAULTS:
+        raise ValueError(f"{rule_path}: unknown rule name")
+    if not isinstance(resource_overrides, Mapping):
+        raise ValueError(f"{rule_path} must be a mapping")
+
+    for resource_name, value in resource_overrides.items():
+        resource_path = f"{rule_path}.{resource_name}"
+        if resource_name not in RULE_RESOURCE_FIELDS:
+            raise ValueError(f"{resource_path}: unknown resource field")
+        if type(value) is not int or value <= 0:
+            raise ValueError(f"{resource_path} must be a positive integer")
+        RULE_RESOURCES[rule_name][resource_name] = value
+
+
+def _get_rule_resource(rule_name, resource_name):
+    if rule_name not in RULE_RESOURCES:
+        raise ValueError(
+            f"unknown internal rule resource name: {rule_name}"
+        )
+    return RULE_RESOURCES[rule_name][resource_name]
+
+
+def get_threads(rule_name):
+    return _get_rule_resource(rule_name, "threads")
+
+
+def get_mem_mb(rule_name):
+    return _get_rule_resource(rule_name, "mem_mb")
+
+
+def get_runtime(rule_name):
+    return _get_rule_resource(rule_name, "runtime")
+
 
 SAMPLES = pd.read_csv(
     config["samples"],

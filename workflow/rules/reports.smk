@@ -87,12 +87,16 @@ rule rna_multiqc:
             "results/mapping/rna/{library_id}.Log.final.out",
             library_id=RNA_LIBRARIES,
         ),
-        config="config/multiqc_config.yaml",
+        config=MULTIQC_CONFIG,
     output:
         html="results/reports/rna/multiqc_report.html",
         data=directory("results/reports/rna/multiqc_report_data"),
     params:
         outdir="results/reports/rna",
+    threads: get_threads("rna_multiqc")
+    resources:
+        mem_mb=get_mem_mb("rna_multiqc"),
+        runtime=get_runtime("rna_multiqc"),
     conda:
         "../envs/multiqc.yaml"
     log:
@@ -119,7 +123,8 @@ rule rna_gene_qc:
         count_tables=expand(
             "results/counts/rna/{library_id}/gene_counts.tsv",
             library_id=RNA_LIBRARIES,
-        )
+        ),
+        script=RNA_GENE_QC_SCRIPT,
     output:
         RNA_GENE_QC_OUTPUTS
     params:
@@ -129,7 +134,10 @@ rule rna_gene_qc:
         sample_report_args=RNA_GENE_QC_SAMPLE_REPORT_ARGS,
         parent1_label=config["parents"]["parent1"]["prefix"],
         parent2_label=config["parents"]["parent2"]["prefix"],
-    threads: 1
+    threads: get_threads("rna_gene_qc")
+    resources:
+        mem_mb=get_mem_mb("rna_gene_qc"),
+        runtime=get_runtime("rna_gene_qc"),
     conda:
         "../envs/rna_gene_qc.yaml"
     log:
@@ -137,7 +145,7 @@ rule rna_gene_qc:
     shell:
         r"""
         mkdir -p "$(dirname {log:q})"
-        python workflow/scripts/rna_gene_qc.py \
+        python {input.script:q} \
             --count-tables {input.count_tables:q} \
             --summary {params.summary:q} \
             --retention {params.retention:q} \

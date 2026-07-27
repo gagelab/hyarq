@@ -4,7 +4,10 @@ rule raw_fastqc:
         r2=lambda wildcards: SAMPLES.loc[wildcards.library_id, "r2"],
     output:
         directory("results/qc/fastqc/raw/{library_id}")
-    threads: 2
+    threads: get_threads("raw_fastqc")
+    resources:
+        mem_mb=get_mem_mb("raw_fastqc"),
+        runtime=get_runtime("raw_fastqc"),
     conda:
         "../envs/fastqc.yaml"
     log:
@@ -26,7 +29,10 @@ rule rna_fastp:
         r2="results/preprocessing/rna/{library_id}/{library_id}_R2.fq.gz",
         html="results/qc/fastp/rna/{library_id}.html",
         json="results/qc/fastp/rna/{library_id}.json",
-    threads: 4
+    threads: get_threads("rna_fastp")
+    resources:
+        mem_mb=get_mem_mb("rna_fastp"),
+        runtime=get_runtime("rna_fastp"),
     conda:
         "../envs/fastp.yaml"
     log:
@@ -55,7 +61,10 @@ rule rna_clean_fastqc:
         r2="results/preprocessing/rna/{library_id}/{library_id}_R2.fq.gz",
     output:
         directory("results/qc/fastqc/clean/rna/{library_id}")
-    threads: 2
+    threads: get_threads("rna_clean_fastqc")
+    resources:
+        mem_mb=get_mem_mb("rna_clean_fastqc"),
+        runtime=get_runtime("rna_clean_fastqc"),
     conda:
         "../envs/fastqc.yaml"
     log:

@@ -8,6 +8,7 @@ rule build_concatenated_reference:
         parent2_fasta=config["parents"]["parent2"]["fasta"],
         parent1_gtf=config["parents"]["parent1"]["gtf"],
         parent2_gtf=config["parents"]["parent2"]["gtf"],
+        script=BUILD_CONCATENATED_REFERENCE_SCRIPT,
     output:
         fasta=f"{REFERENCE_OUTDIR}/concatenated.fa",
         gtf=f"{REFERENCE_OUTDIR}/concatenated.gtf",
@@ -18,6 +19,10 @@ rule build_concatenated_reference:
         parent2_prefix=config["parents"]["parent2"]["prefix"],
         reference_id=REFERENCE_ID,
         outdir=REFERENCE_OUTDIR,
+    threads: get_threads("build_concatenated_reference")
+    resources:
+        mem_mb=get_mem_mb("build_concatenated_reference"),
+        runtime=get_runtime("build_concatenated_reference"),
     conda:
         "../envs/samtools.yaml"
     log:
@@ -33,7 +38,7 @@ rule build_concatenated_reference:
         PARENT2_PREFIX={params.parent2_prefix:q} \
         REFERENCE_ID={params.reference_id:q} \
         OUTDIR={params.outdir:q} \
-        bash workflow/scripts/build_concatenated_reference.sh > {log:q} 2>&1
+        bash {input.script:q} > {log:q} 2>&1
         """
 
 
@@ -45,7 +50,10 @@ rule build_star_index:
     output:
         index=directory(f"{REFERENCE_OUTDIR}/star_index"),
         report=f"{REFERENCE_OUTDIR}/star_index_build_report.tsv",
-    threads: 4
+    threads: get_threads("build_star_index")
+    resources:
+        mem_mb=get_mem_mb("build_star_index"),
+        runtime=get_runtime("build_star_index"),
     conda:
         "../envs/star.yaml"
     log:
@@ -86,15 +94,20 @@ rule build_star_index:
 
 rule validate_rna_gene_pairs:
     input:
-        gene_pairs=config["rna_gene_pairs"]
+        gene_pairs=config["rna_gene_pairs"],
+        script=VALIDATE_PAIRED_FEATURES_SCRIPT,
     output:
         report="results/qc/rna/gene_pairs_validation.tsv"
+    threads: get_threads("validate_rna_gene_pairs")
+    resources:
+        mem_mb=get_mem_mb("validate_rna_gene_pairs"),
+        runtime=get_runtime("validate_rna_gene_pairs"),
     log:
         "logs/validation/rna_gene_pairs.log"
     shell:
         """
         mkdir -p $(dirname {log:q})
-        python workflow/scripts/validate_paired_features.py \
+        python {input.script:q} \
           --gene-pairs {input.gene_pairs:q} \
           --report {output.report:q} \
           > {log:q} 2>&1
