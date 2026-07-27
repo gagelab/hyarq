@@ -25,10 +25,12 @@ invalid_assays = sorted(set(SAMPLES.loc[~SAMPLES["assay"].isin(ALLOWED_ASSAYS), 
 if invalid_assays:
     raise ValueError(f"invalid assay values: {invalid_assays}; allowed values: {ALLOWED_ASSAYS}")
 
-SAMPLES["library_id"] = SAMPLES["sample_id"] + "_rep" + SAMPLES["replicate"]
-if SAMPLES["library_id"].duplicated().any():
-    duplicates = sorted(SAMPLES.loc[SAMPLES["library_id"].duplicated(), "library_id"].unique())
-    raise ValueError(f"duplicate library_id values: {duplicates}")
+if SAMPLES["sample_id"].duplicated().any():
+    duplicates = sorted(
+        SAMPLES.loc[SAMPLES["sample_id"].duplicated(), "sample_id"].unique()
+    )
+    raise ValueError(f"duplicate sample_id values: {duplicates}")
+SAMPLES["library_id"] = SAMPLES["sample_id"]
 
 SAMPLES = SAMPLES.set_index("library_id", drop=False)
 
