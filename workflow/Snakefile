@@ -23,3 +23,4 @@ rule all:
             library_id=RNA_LIBRARIES,
         ),
         "results/reports/rna/multiqc_report.html",
+        "results/reports/rna/gene_qc_report.pdf",
