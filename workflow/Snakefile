@@ -17,6 +17,9 @@ MAP_RNA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_rna_star.sh")
 COUNT_RNA_GENES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "count_rna_genes.sh"
 )
+AGGREGATE_RNA_GENE_COUNTS_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "aggregate_rna_gene_counts.py"
+)
 RNA_GENE_QC_SCRIPT = str(WORKFLOW_DIR / "scripts" / "rna_gene_qc.py")
 MULTIQC_CONFIG = str(REPOSITORY_ROOT / "config" / "multiqc_config.yaml")
 
@@ -42,5 +45,6 @@ rule all:
             "results/counts/rna/{library_id}/filter_summary.tsv",
             library_id=RNA_LIBRARIES,
         ),
+        "results/counts/rna/gene_pair_count_matrix.tsv",
         "results/reports/rna/multiqc_report.html",
-        "results/reports/rna/gene_qc_report.pdf",
+        RNA_GENE_QC_OUTPUTS,

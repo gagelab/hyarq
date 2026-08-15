@@ -46,6 +46,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 16000,
         "runtime": 360,
     },
+    "aggregate_rna_gene_counts": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "rna_multiqc": {
         "threads": 1,
         "mem_mb": 8000,

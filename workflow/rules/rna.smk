@@ -82,3 +82,30 @@ rule count_rna_genes:
         LIBRARY_ID={wildcards.library_id:q} \
         bash {input.script:q} > {log:q} 2>&1
         """
+
+
+rule aggregate_rna_gene_counts:
+    input:
+        count_tables=expand(
+            "results/counts/rna/{library_id}/gene_counts.tsv",
+            library_id=RNA_LIBRARIES,
+        ),
+        script=AGGREGATE_RNA_GENE_COUNTS_SCRIPT,
+    output:
+        matrix="results/counts/rna/gene_pair_count_matrix.tsv",
+    threads: 1
+    resources:
+        mem_mb=get_mem_mb("aggregate_rna_gene_counts"),
+        runtime=get_runtime("aggregate_rna_gene_counts"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/counting/rna/aggregate_gene_counts.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --output {output.matrix:q} \
+            > {log:q} 2>&1
+        """
