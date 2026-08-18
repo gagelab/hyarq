@@ -21,6 +21,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 2000,
         "runtime": 30,
     },
+    "validate_moa_footprint_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
     "raw_fastqc": {
         "threads": 2,
         "mem_mb": 4000,
@@ -30,6 +35,26 @@ RULE_RESOURCE_DEFAULTS = {
         "threads": 4,
         "mem_mb": 8000,
         "runtime": 240,
+    },
+    "moa_seqpurge": {
+        "threads": 8,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
+    "moa_ngmerge": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
+    "moa_merged_fastqc": {
+        "threads": 1,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "map_moa_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
     },
     "rna_clean_fastqc": {
         "threads": 2,
@@ -142,3 +167,4 @@ SAMPLES = SAMPLES.set_index("library_id", drop=False)
 
 LIBRARIES = list(SAMPLES.index)
 RNA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "rna"].index)
+MOA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "moa"].index)

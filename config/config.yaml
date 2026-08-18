@@ -12,6 +12,24 @@ parents:
     gtf: ""
 
 rna_gene_pairs: ""
+moa_footprint_pairs: ""
+
+moa:
+  # MOA preprocessing and mapping defaults follow Engelhorn et al. 2025;
+  # adjust them as needed for other datasets.
+  seqpurge:
+    min_len: 20
+    # qcut 0 intentionally disables quality trimming.
+    qcut: 0
+  ngmerge:
+    mismatch_fraction: 0.2
+    min_overlap: 15
+    dovetail: true
+    min_dovetail_overlap: 30
+  star:
+    align_intron_max: 1
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
 
 # Portable per-job requirements. mem_mb is total memory for one job, and
 # runtime is in minutes. Adjust these values for your data and environment.
@@ -30,6 +48,10 @@ rule_resources:
     threads: 1
     mem_mb: 2000
     runtime: 30
+  validate_moa_footprint_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
   raw_fastqc:
     threads: 2
     mem_mb: 4000
@@ -38,6 +60,22 @@ rule_resources:
     threads: 4
     mem_mb: 8000
     runtime: 240
+  moa_seqpurge:
+    threads: 8
+    mem_mb: 8000
+    runtime: 240
+  moa_ngmerge:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  moa_merged_fastqc:
+    threads: 1
+    mem_mb: 4000
+    runtime: 120
+  map_moa_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
   rna_clean_fastqc:
     threads: 2
     mem_mb: 4000

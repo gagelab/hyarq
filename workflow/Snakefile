@@ -14,6 +14,7 @@ VALIDATE_PAIRED_FEATURES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "validate_paired_features.py"
 )
 MAP_RNA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_rna_star.sh")
+MAP_MOA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_moa_star.sh")
 COUNT_RNA_GENES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "count_rna_genes.sh"
 )
