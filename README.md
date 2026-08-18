@@ -26,10 +26,7 @@ git clone https://github.com/gagelab/HyARQ.git
 cd HyARQ
 ```
 #### Create the Conda environment 
-```bash
-conda env create -f environment.yml
-conda activate hyarq
-```
+
 #### Required inputs
 1. config.yaml
 2. samples.tsv
