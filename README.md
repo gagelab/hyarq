@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="docs/images/logo.png" width="300"/>
+  <img src="docs/images/logo.png" width="500"/>
 </p>
 
-## HyARQ
+## Hybrid Allele-specific Read Quantification
 
 A Snakemake workflow for allele-specific read counting and quality control in plant and other hybrids. It builds a two-haplotype concatenated reference and maps RNA-seq, ATAC-seq, ChIP-seq, or MOA-seq to generate allele counts with reduced mapping bias and built-in QC visualizations. This pipeline can be used to study allele-specific expression, cis-regulatory variation, and heterosis where two parental genomes are available.
 
 ## Workflow
 
 <p align="center">
-  <img src="docs/images/workflow.png" width="700"/>
+  <img src="docs/images/workflow.png" width="900"/>
 </p>
 
 ## Main Elements
@@ -21,7 +21,16 @@ A Snakemake workflow for allele-specific read counting and quality control in pl
 ## Installation and Usage
 
 #### Clone the repository
-
+```bash
+git clone https://github.com/gagelab/HyARQ.git
+cd HyARQ
+```
 #### Create the Conda environment 
-
+```bash
+conda env create -f environment.yml
+conda activate hyarq
+```
 #### Required inputs
+1. config.yaml
+2. samples.tsv
+3. Reference inputs
