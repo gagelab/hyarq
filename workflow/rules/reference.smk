@@ -114,23 +114,23 @@ rule validate_rna_gene_pairs:
         """
 
 
-rule validate_moa_footprint_pairs:
+rule validate_moa_peak_pairs:
     input:
-        footprint_pairs=config["moa_footprint_pairs"],
+        peak_pairs=config["moa_peak_pairs"],
         script=VALIDATE_PAIRED_FEATURES_SCRIPT,
     output:
-        report="results/qc/moa/footprint_pairs_validation.tsv"
-    threads: get_threads("validate_moa_footprint_pairs")
+        report="results/qc/moa/peak_pairs_validation.tsv"
+    threads: get_threads("validate_moa_peak_pairs")
     resources:
-        mem_mb=get_mem_mb("validate_moa_footprint_pairs"),
-        runtime=get_runtime("validate_moa_footprint_pairs"),
+        mem_mb=get_mem_mb("validate_moa_peak_pairs"),
+        runtime=get_runtime("validate_moa_peak_pairs"),
     log:
-        "logs/validation/moa_footprint_pairs.log"
+        "logs/validation/moa_peak_pairs.log"
     shell:
         """
         mkdir -p $(dirname {log:q})
         python {input.script:q} \
-          --footprint-pairs {input.footprint_pairs:q} \
+          --peak-pairs {input.peak_pairs:q} \
           --report {output.report:q} \
           > {log:q} 2>&1
         """

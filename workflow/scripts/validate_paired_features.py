@@ -99,7 +99,6 @@ def main():
     ap = argparse.ArgumentParser(description="Format check for paired-feature tables.")
     ap.add_argument("--gene-pairs")
     ap.add_argument("--peak-pairs")
-    ap.add_argument("--footprint-pairs")
     ap.add_argument("--report", default="results/qc/paired_features_validation.tsv")
     args = ap.parse_args()
 
@@ -110,11 +109,8 @@ def main():
         metrics["gene_pair_rows"] = validate_gene_pairs(args.gene_pairs, errors)
     if args.peak_pairs:
         metrics["peak_pair_rows"] = validate_coord_pairs(args.peak_pairs, errors)
-    if args.footprint_pairs:
-        metrics["footprint_pair_rows"] = validate_coord_pairs(args.footprint_pairs, errors)
-
-    if not (args.gene_pairs or args.peak_pairs or args.footprint_pairs):
-        errors.append("no pair tables given (need at least one of --gene-pairs/--peak-pairs/--footprint-pairs)")
+    if not (args.gene_pairs or args.peak_pairs):
+        errors.append("no pair tables given (need at least one of --gene-pairs/--peak-pairs)")
 
     metrics["error_count"] = len(errors)
     metrics["validation_result"] = "FAIL" if errors else "PASS"

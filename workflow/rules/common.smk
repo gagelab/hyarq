@@ -21,7 +21,7 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 2000,
         "runtime": 30,
     },
-    "validate_moa_footprint_pairs": {
+    "validate_moa_peak_pairs": {
         "threads": 1,
         "mem_mb": 2000,
         "runtime": 30,

@@ -1,4 +1,4 @@
-# MOA-seq mapping and footprint-level allele-specific counting rules.
+# MOA-seq mapping and peak-level allele-specific counting rules.
 
 rule map_moa_star:
     input:
