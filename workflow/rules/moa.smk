@@ -85,3 +85,30 @@ rule count_moa_peaks:
             --threads {threads} \
             > {log:q} 2>&1
         """
+
+
+rule aggregate_moa_peak_counts:
+    input:
+        count_tables=expand(
+            "results/counts/moa/{library_id}/peak_counts.tsv",
+            library_id=MOA_LIBRARIES,
+        ),
+        script=AGGREGATE_PAIRED_REGION_COUNTS_SCRIPT,
+    output:
+        matrix="results/counts/moa/peak_pair_count_matrix.tsv",
+    threads: 1
+    resources:
+        mem_mb=get_mem_mb("aggregate_moa_peak_counts"),
+        runtime=get_runtime("aggregate_moa_peak_counts"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/counting/moa/aggregate_peak_counts.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --output {output.matrix:q} \
+            > {log:q} 2>&1
+        """
