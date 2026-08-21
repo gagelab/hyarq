@@ -18,6 +18,9 @@ MAP_MOA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_moa_star.sh")
 COUNT_RNA_GENES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "count_rna_genes.sh"
 )
+COUNT_PAIRED_REGIONS_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "count_paired_regions.py"
+)
 AGGREGATE_RNA_GENE_COUNTS_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "aggregate_rna_gene_counts.py"
 )
