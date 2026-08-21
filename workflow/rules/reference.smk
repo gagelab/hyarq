@@ -1,24 +1,40 @@
-REFERENCE_ID = config["reference_id"]
-REFERENCE_OUTDIR = f"resources/references/{REFERENCE_ID}"
-
-
 rule build_concatenated_reference:
     input:
-        parent1_fasta=config["parents"]["parent1"]["fasta"],
-        parent2_fasta=config["parents"]["parent2"]["fasta"],
-        parent1_gtf=config["parents"]["parent1"]["gtf"],
-        parent2_gtf=config["parents"]["parent2"]["gtf"],
+        parent1_fasta=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["fasta"],
+            "parents.parent1.fasta",
+        ),
+        parent2_fasta=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["fasta"],
+            "parents.parent2.fasta",
+        ),
+        parent1_gtf=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["gtf"],
+            "parents.parent1.gtf",
+        ),
+        parent2_gtf=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["gtf"],
+            "parents.parent2.gtf",
+        ),
         script=BUILD_CONCATENATED_REFERENCE_SCRIPT,
     output:
-        fasta=f"{REFERENCE_OUTDIR}/concatenated.fa",
-        gtf=f"{REFERENCE_OUTDIR}/concatenated.gtf",
-        fai=f"{REFERENCE_OUTDIR}/concatenated.fa.fai",
-        report=f"{REFERENCE_OUTDIR}/reference_build_report.tsv",
+        fasta="resources/references/{reference_id}/concatenated.fa",
+        gtf="resources/references/{reference_id}/concatenated.gtf",
+        fai="resources/references/{reference_id}/concatenated.fa.fai",
+        report="resources/references/{reference_id}/reference_build_report.tsv",
     params:
-        parent1_prefix=config["parents"]["parent1"]["prefix"],
-        parent2_prefix=config["parents"]["parent2"]["prefix"],
-        reference_id=REFERENCE_ID,
-        outdir=REFERENCE_OUTDIR,
+        parent1_prefix=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["prefix"],
+            "parents.parent1.prefix",
+        ),
+        parent2_prefix=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["prefix"],
+            "parents.parent2.prefix",
+        ),
+        reference_id=lambda wildcards: wildcards.reference_id,
+        outdir=lambda wildcards: (
+            f"resources/references/{wildcards.reference_id}"
+        ),
     threads: get_threads("build_concatenated_reference")
     resources:
         mem_mb=get_mem_mb("build_concatenated_reference"),
@@ -26,7 +42,7 @@ rule build_concatenated_reference:
     conda:
         "../envs/samtools.yaml"
     log:
-        f"logs/reference/{REFERENCE_ID}.log"
+        "logs/reference/{reference_id}.log"
     shell:
         """
         mkdir -p $(dirname {log:q})
@@ -48,8 +64,12 @@ rule build_star_index:
         gtf=rules.build_concatenated_reference.output.gtf,
         fai=rules.build_concatenated_reference.output.fai,
     output:
-        index=directory(f"{REFERENCE_OUTDIR}/star_index"),
-        report=f"{REFERENCE_OUTDIR}/star_index_build_report.tsv",
+        index=directory(
+            "resources/references/{reference_id}/star_index"
+        ),
+        report="resources/references/{reference_id}/star_index_build_report.tsv",
+    params:
+        reference_id=lambda wildcards: wildcards.reference_id,
     threads: get_threads("build_star_index")
     resources:
         mem_mb=get_mem_mb("build_star_index"),
@@ -57,7 +77,7 @@ rule build_star_index:
     conda:
         "../envs/star.yaml"
     log:
-        f"logs/reference/{REFERENCE_ID}.star_index.log"
+        "logs/reference/{reference_id}.star_index.log"
     shell:
         """
         mkdir -p $(dirname {log:q})
@@ -79,7 +99,7 @@ rule build_star_index:
                 --sjdbOverhang 149 \
                 --genomeSAindexNbases "$SA_NBASES"
             printf "metric\tvalue\n" > {output.report:q}
-            printf "reference_id\t%s\n" "{REFERENCE_ID}" >> {output.report:q}
+            printf "reference_id\t%s\n" "{params.reference_id}" >> {output.report:q}
             printf "ref_fasta\t%s\n" {input.fasta:q} >> {output.report:q}
             printf "ref_gtf\t%s\n" {input.gtf:q} >> {output.report:q}
             printf "index_dir\t%s\n" {output.index:q} >> {output.report:q}
@@ -94,7 +114,10 @@ rule build_star_index:
 
 rule validate_rna_gene_pairs:
     input:
-        gene_pairs=config["rna_gene_pairs"],
+        gene_pairs=lambda wildcards: require_config_value(
+            config["rna_gene_pairs"],
+            "rna_gene_pairs",
+        ),
         script=VALIDATE_PAIRED_FEATURES_SCRIPT,
     output:
         report="results/qc/rna/gene_pairs_validation.tsv"
@@ -116,7 +139,10 @@ rule validate_rna_gene_pairs:
 
 rule validate_moa_peak_pairs:
     input:
-        peak_pairs=config["moa_peak_pairs"],
+        peak_pairs=lambda wildcards: require_config_value(
+            config["moa_peak_pairs"],
+            "moa_peak_pairs",
+        ),
         script=VALIDATE_PAIRED_FEATURES_SCRIPT,
     output:
         report="results/qc/moa/peak_pairs_validation.tsv"

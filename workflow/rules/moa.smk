@@ -3,7 +3,9 @@
 rule map_moa_star:
     input:
         merged=rules.moa_ngmerge.output.merged,
-        index=rules.build_star_index.output.index,
+        index=lambda wildcards: configured_reference_path(
+            "star_index"
+        ),
         script=MAP_MOA_STAR_SCRIPT,
     output:
         aligned_bam="results/mapping/moa/{library_id}.Aligned.sortedByCoord.out.bam",
@@ -14,7 +16,10 @@ rule map_moa_star:
     params:
         sample=lambda wildcards: SAMPLES.loc[wildcards.library_id, "sample_id"],
         replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
-        reference_id=config["reference_id"],
+        reference_id=lambda wildcards: require_config_value(
+            config["reference_id"],
+            "reference_id",
+        ),
         outdir="results/mapping/moa",
         align_intron_max=config["moa"]["star"]["align_intron_max"],
         out_sam_mult_nmax=config["moa"]["star"]["out_sam_mult_nmax"],
@@ -48,7 +53,10 @@ rule map_moa_star:
 rule count_moa_peaks:
     input:
         bam=rules.map_moa_star.output.unique_bam,
-        peak_pairs=config["moa_peak_pairs"],
+        peak_pairs=lambda wildcards: require_config_value(
+            config["moa_peak_pairs"],
+            "moa_peak_pairs",
+        ),
         validation=rules.validate_moa_peak_pairs.output,
         script=COUNT_PAIRED_REGIONS_SCRIPT,
     output:

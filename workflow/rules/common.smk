@@ -124,6 +124,28 @@ for rule_name, resource_overrides in configured_rule_resources.items():
         RULE_RESOURCES[rule_name][resource_name] = value
 
 
+# These helpers do not themselves defer evaluation. For optional or
+# config-dependent rule inputs, call them inside an input function or lambda so
+# validation occurs only when that job is instantiated.
+def require_config_value(value, config_key):
+    if value is None:
+        raise ValueError(f"required config value is not set: {config_key}")
+    validated_value = str(value).strip()
+    if not validated_value:
+        raise ValueError(f"required config value is not set: {config_key}")
+    return validated_value
+
+
+def configured_reference_path(*parts):
+    reference_id = require_config_value(
+        config["reference_id"],
+        "reference_id",
+    )
+    return "/".join(
+        ("resources", "references", reference_id, *parts)
+    )
+
+
 def _get_rule_resource(rule_name, resource_name):
     if rule_name not in RULE_RESOURCES:
         raise ValueError(

@@ -4,7 +4,9 @@ rule map_rna_star:
     input:
         r1=rules.rna_fastp.output.r1,
         r2=rules.rna_fastp.output.r2,
-        index=rules.build_star_index.output.index,
+        index=lambda wildcards: configured_reference_path(
+            "star_index"
+        ),
         script=MAP_RNA_STAR_SCRIPT,
     output:
         bam="results/mapping/rna/{library_id}.Aligned.sortedByCoord.out.bam",
@@ -15,7 +17,10 @@ rule map_rna_star:
     params:
         sample=lambda wildcards: SAMPLES.loc[wildcards.library_id, "sample_id"],
         replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
-        reference_id=config["reference_id"],
+        reference_id=lambda wildcards: require_config_value(
+            config["reference_id"],
+            "reference_id",
+        ),
         outdir="results/mapping/rna",
     threads: get_threads("map_rna_star")
     resources:
@@ -44,8 +49,13 @@ rule map_rna_star:
 rule count_rna_genes:
     input:
         bam=rules.map_rna_star.output.bam,
-        gtf=rules.build_concatenated_reference.output.gtf,
-        gene_pairs=config["rna_gene_pairs"],
+        gtf=lambda wildcards: configured_reference_path(
+            "concatenated.gtf"
+        ),
+        gene_pairs=lambda wildcards: require_config_value(
+            config["rna_gene_pairs"],
+            "rna_gene_pairs",
+        ),
         validation=rules.validate_rna_gene_pairs.output.report,
         script=COUNT_RNA_GENES_SCRIPT,
     output:
