@@ -1,5 +1,6 @@
 import argparse
 import sys
+from dataclasses import dataclass
 
 import matplotlib
 matplotlib.use("Agg")
@@ -10,9 +11,17 @@ from matplotlib.colors import is_color_like, to_rgba
 from matplotlib.ticker import MaxNLocator
 
 
-RNA_RETENTION_THRESHOLDS = (1, 5, 10, 20, 30, 60)
+PAIRED_FEATURE_RETENTION_THRESHOLDS = (1, 5, 10, 20, 30, 60)
 SAMPLE_HEXBIN_GRIDSIZE = 45
 SAMPLE_HEXBIN_CMAP = "viridis"
+
+
+@dataclass(frozen=True)
+class FeatureTerminology:
+    singular: str
+    plural: str
+    plural_capitalized: str
+    hyphenated: str
 
 
 def plot_color(value):
@@ -79,6 +88,7 @@ def plot_parental_fraction_histogram(
     histogram_colors,
     parent1_label,
     parent2_label,
+    terminology,
     panel_title=None,
 ):
     bins = [i / 20 for i in range(21)]
@@ -93,7 +103,7 @@ def plot_parental_fraction_histogram(
         ax.text(
             0.5,
             0.5,
-            "No gene pairs have\na positive total count",
+            f"No {terminology.plural} have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -108,10 +118,10 @@ def plot_parental_fraction_histogram(
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
     ax.set_xlabel(f"{parent1_label} count proportion")
-    ax.set_ylabel("Gene pairs")
+    ax.set_ylabel(terminology.plural_capitalized)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     subtitle = (
-        "Gene pairs with total count > 0: "
+        f"{terminology.plural_capitalized} with total count > 0: "
         f"{plotted_count:,}"
     )
     if panel_title is not None:
@@ -126,6 +136,7 @@ def plot_pooled_parental_fraction_histogram(
     parent1_label,
     parent2_label,
     histogram_bins,
+    terminology,
 ):
     plotted = pooled.loc[pooled["total_count"] > 0]
     plotted_count = len(plotted)
@@ -143,7 +154,7 @@ def plot_pooled_parental_fraction_histogram(
         ax.text(
             0.5,
             0.5,
-            "No pooled gene pairs have\na positive total count",
+            f"No pooled {terminology.plural} have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -159,10 +170,12 @@ def plot_pooled_parental_fraction_histogram(
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
     ax.set_xlabel(f"{parent1_label} count proportion")
-    ax.set_ylabel("Gene pairs")
+    ax.set_ylabel(terminology.plural_capitalized)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(
-        f"A. Parental count proportion\nGene pairs with total count > 0: {plotted_count:,}"
+        "A. Parental count proportion\n"
+        f"{terminology.plural_capitalized} with total count > 0: "
+        f"{plotted_count:,}"
     )
     return plotted_count
 
@@ -172,6 +185,7 @@ def plot_parent_count_hexbin(
     pooled,
     parent1_label,
     parent2_label,
+    terminology,
 ):
     plotted = pooled.loc[pooled["total_count"] > 0]
     plotted_count = len(plotted)
@@ -196,7 +210,9 @@ def plot_parent_count_hexbin(
             ax=ax,
             pad=0.02,
         )
-        colorbar.set_label("Gene pairs per hexagon (log scale)")
+        colorbar.set_label(
+            f"{terminology.plural_capitalized} per hexagon (log scale)"
+        )
         ax.plot(
             [0, axis_limit],
             [0, axis_limit],
@@ -211,7 +227,7 @@ def plot_parent_count_hexbin(
         ax.text(
             0.5,
             0.5,
-            "No pooled gene pairs have\na positive total count",
+            f"No pooled {terminology.plural} have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -223,7 +239,9 @@ def plot_parent_count_hexbin(
     ax.set_xlabel(f"log2({parent1_label} count + 1)")
     ax.set_ylabel(f"log2({parent2_label} count + 1)")
     ax.set_title(
-        f"B. Parental counts per gene pair\nGene pairs with total count > 0: {plotted_count:,}"
+        f"B. Parental counts per {terminology.singular}\n"
+        f"{terminology.plural_capitalized} with total count > 0: "
+        f"{plotted_count:,}"
     )
     return plotted_count
 
@@ -233,6 +251,7 @@ def plot_per_library_cumulative_depth_curves(
     tables,
     depth_curve_color,
     depth_curve_alpha,
+    terminology,
 ):
     sorted_counts_by_library = []
     skipped_library_count = 0
@@ -298,7 +317,7 @@ def plot_per_library_cumulative_depth_curves(
         ax.text(
             0.5,
             0.5,
-            "No libraries have gene pairs with total count > 0",
+            f"No libraries have {terminology.plural} with total count > 0",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -309,23 +328,29 @@ def plot_per_library_cumulative_depth_curves(
         MaxNLocator(nbins=6, integer=True)
     )
     ax.set_ylim(0, 1)
-    ax.set_xlabel("log2(total count per gene pair)")
-    ax.set_ylabel("Cumulative fraction of counted gene pairs")
+    ax.set_xlabel(f"log2(total count per {terminology.singular})")
+    ax.set_ylabel(
+        f"Cumulative fraction of counted {terminology.plural}"
+    )
     ax.set_title(
-        "C. Per-library cumulative gene-pair depth curves\n"
-        "Gene pairs with total count > 0"
+        f"C. Per-library cumulative {terminology.hyphenated} depth curves\n"
+        f"{terminology.plural_capitalized} with total count > 0"
     )
     return included_library_count, skipped_library_count
 
 
-def plot_gene_pair_retention(
+def plot_paired_feature_retention(
     ax,
     retention,
     retention_colors,
+    terminology,
 ):
-    positions = np.arange(1, len(RNA_RETENTION_THRESHOLDS) + 1)
+    positions = np.arange(
+        1,
+        len(PAIRED_FEATURE_RETENTION_THRESHOLDS) + 1,
+    )
     distributions = []
-    for threshold in RNA_RETENTION_THRESHOLDS:
+    for threshold in PAIRED_FEATURE_RETENTION_THRESHOLDS:
         values = (
             retention.loc[
                 retention["minimum_total_count"] == threshold,
@@ -341,7 +366,7 @@ def plot_gene_pair_retention(
         ax.text(
             0.5,
             0.5,
-            "No gene-pair retention values available",
+            f"No {terminology.hyphenated} retention values available",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -386,16 +411,23 @@ def plot_gene_pair_retention(
                 zorder=3,
             )
 
-    ax.set_xlim(0.5, len(RNA_RETENTION_THRESHOLDS) + 0.5)
+    ax.set_xlim(
+        0.5,
+        len(PAIRED_FEATURE_RETENTION_THRESHOLDS) + 0.5,
+    )
     ax.set_ylim(0, 100)
     ax.set_xticks(positions)
-    ax.set_xticklabels(RNA_RETENTION_THRESHOLDS)
-    ax.set_xlabel("Minimum total count per gene pair")
-    ax.set_ylabel("Retained gene pairs (%)")
-    ax.set_title("D. Across-library gene-pair retention")
+    ax.set_xticklabels(PAIRED_FEATURE_RETENTION_THRESHOLDS)
+    ax.set_xlabel(
+        f"Minimum total count per {terminology.singular}"
+    )
+    ax.set_ylabel(f"Retained {terminology.plural} (%)")
+    ax.set_title(
+        f"D. Across-library {terminology.hyphenated} retention"
+    )
 
 
-def write_rna_gene_qc_report(
+def write_paired_feature_qc_report(
     tables,
     pooled,
     path,
@@ -407,6 +439,8 @@ def write_rna_gene_qc_report(
     depth_curve_alpha,
     retention,
     retention_colors,
+    terminology,
+    report_prefix,
 ):
     path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(path) as pdf:
@@ -423,9 +457,11 @@ def write_rna_gene_qc_report(
             parent1_label=parent1_label,
             parent2_label=parent2_label,
             histogram_bins=histogram_bins,
+            terminology=terminology,
         )
         print(
-            f"Panel A pooled positive-count gene pairs: {panel_a_plotted_count}",
+            f"Panel A pooled positive-count {terminology.plural}: "
+            f"{panel_a_plotted_count}",
             file=sys.stderr,
         )
         panel_b_plotted_count = plot_parent_count_hexbin(
@@ -433,9 +469,11 @@ def write_rna_gene_qc_report(
             pooled,
             parent1_label,
             parent2_label,
+            terminology,
         )
         print(
-            f"Panel B pooled positive-count gene pairs: {panel_b_plotted_count}",
+            f"Panel B pooled positive-count {terminology.plural}: "
+            f"{panel_b_plotted_count}",
             file=sys.stderr,
         )
         panel_c_included_count, panel_c_skipped_count = (
@@ -444,29 +482,35 @@ def write_rna_gene_qc_report(
                 tables,
                 depth_curve_color,
                 depth_curve_alpha,
+                terminology,
             )
         )
         print(
-            "Panel C libraries with gene pairs having total count > 0: "
+            f"Panel C libraries with {terminology.plural} having "
+            "total count > 0: "
             f"{panel_c_included_count}; skipped libraries: {panel_c_skipped_count}",
             file=sys.stderr,
         )
-        plot_gene_pair_retention(
+        plot_paired_feature_retention(
             axes[1, 1],
             retention,
             retention_colors,
+            terminology,
         )
         retention_library_count = retention["library_id"].nunique()
         print(
             "Panel D retention libraries: "
             f"{retention_library_count}; thresholds: "
-            f"{','.join(map(str, RNA_RETENTION_THRESHOLDS))}",
+            f"{','.join(map(str, PAIRED_FEATURE_RETENTION_THRESHOLDS))}",
             file=sys.stderr,
         )
-        fig.suptitle("RNA gene QC")
+        fig.suptitle(f"{report_prefix} QC")
         pdf.savefig(fig)
         plt.close(fig)
-    print("RNA gene QC report pages written: 1", file=sys.stderr)
+    print(
+        f"{report_prefix} QC report pages written: 1",
+        file=sys.stderr,
+    )
 
 
 def prepare_sample_scatter_arrays(table):
@@ -483,6 +527,7 @@ def plot_sample_parent_count_hexbin(
     table,
     parent1_label,
     parent2_label,
+    terminology,
 ):
     x, y = prepare_sample_scatter_arrays(table)
     plotted_count = len(x)
@@ -517,13 +562,13 @@ def plot_sample_parent_count_hexbin(
             pad=0.02,
         )
         colorbar.set_label(
-            "Gene pairs per hexagon (log scale)"
+            f"{terminology.plural_capitalized} per hexagon (log scale)"
         )
     else:
         ax.text(
             0.5,
             0.5,
-            "No gene pairs have\na positive total count",
+            f"No {terminology.plural} have\na positive total count",
             ha="center",
             va="center",
             transform=ax.transAxes,
@@ -546,7 +591,7 @@ def plot_sample_parent_count_hexbin(
     ax.set_ylabel(f"log2({parent2_label} count + 1)")
     ax.set_title(
         f"{library_id}\n"
-        "Gene pairs with total count > 0: "
+        f"{terminology.plural_capitalized} with total count > 0: "
         f"{plotted_count:,}",
         fontsize=9,
     )
@@ -559,6 +604,7 @@ def plot_sample_parental_fraction_histogram(
     histogram_colors,
     parent1_label,
     parent2_label,
+    terminology,
 ):
     plotted = table.loc[table["total_count"] > 0]
     plotted_count = len(plotted)
@@ -570,11 +616,12 @@ def plot_sample_parental_fraction_histogram(
         histogram_colors=histogram_colors,
         parent1_label=parent1_label,
         parent2_label=parent2_label,
+        terminology=terminology,
         panel_title=library_id,
     )
 
 
-def write_rna_gene_qc_sample_report(
+def write_paired_feature_qc_sample_report(
     library_ids,
     tables,
     path,
@@ -582,6 +629,8 @@ def write_rna_gene_qc_sample_report(
     histogram_colors,
     parent1_label,
     parent2_label,
+    terminology,
+    report_prefix,
 ):
     sample_items = list(zip(library_ids, tables))
     if plot_types == ("histogram",):
@@ -626,6 +675,7 @@ def write_rna_gene_qc_sample_report(
                             histogram_colors,
                             parent1_label,
                             parent2_label,
+                            terminology,
                         )
                     else:
                         plot_sample_parent_count_hexbin(
@@ -635,13 +685,18 @@ def write_rna_gene_qc_sample_report(
                             table,
                             parent1_label,
                             parent2_label,
+                            terminology,
                         )
                 for ax in axes.flat[len(page_items):]:
                     ax.set_visible(False)
                 if plot_types == ("histogram",):
-                    fig.suptitle("RNA gene parental fractions")
+                    fig.suptitle(
+                        f"{report_prefix} parental fractions"
+                    )
                 else:
-                    fig.suptitle("RNA gene parental counts")
+                    fig.suptitle(
+                        f"{report_prefix} parental counts"
+                    )
             else:
                 fig, axes = plt.subplots(
                     2,
@@ -684,6 +739,7 @@ def write_rna_gene_qc_sample_report(
                         histogram_colors,
                         parent1_label,
                         parent2_label,
+                        terminology,
                     )
                     plot_sample_parent_count_hexbin(
                         fig,
@@ -692,6 +748,7 @@ def write_rna_gene_qc_sample_report(
                         table,
                         parent1_label,
                         parent2_label,
+                        terminology,
                     )
                 for row_index in range(2):
                     for column_index in range(4):
@@ -703,14 +760,14 @@ def write_rna_gene_qc_sample_report(
                                 row_index,
                                 column_index,
                             ].set_visible(False)
-                fig.suptitle("RNA gene sample QC")
+                fig.suptitle(f"{report_prefix} sample QC")
 
             pdf.savefig(fig)
             plt.close(fig)
 
     rendered_plot_types = ",".join(plot_types)
     print(
-        "RNA gene QC sample report: "
+        f"{report_prefix} QC sample report: "
         f"libraries={len(sample_items)}; "
         f"plot types={rendered_plot_types}; "
         f"pages written={page_count}",

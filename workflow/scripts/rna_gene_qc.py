@@ -7,14 +7,21 @@ from pathlib import Path
 
 import pandas as pd
 
-from rna_gene_qc_plots import (
-    RNA_RETENTION_THRESHOLDS,
+from paired_feature_qc_plots import (
+    PAIRED_FEATURE_RETENTION_THRESHOLDS,
+    FeatureTerminology,
     plot_color,
-    write_rna_gene_qc_report,
-    write_rna_gene_qc_sample_report,
+    write_paired_feature_qc_report,
+    write_paired_feature_qc_sample_report,
 )
 
 
+GENE_PAIR_TERMINOLOGY = FeatureTerminology(
+    singular="gene pair",
+    plural="gene pairs",
+    plural_capitalized="Gene pairs",
+    hyphenated="gene-pair",
+)
 EXPECTED_COLUMNS = [
     "parent1_gene_id",
     "parent2_gene_id",
@@ -35,7 +42,7 @@ SUMMARY_COLUMNS = [
     "median_gene_pair_parent1_proportion",
     *[
         f"retained_ge_{threshold}"
-        for threshold in RNA_RETENTION_THRESHOLDS
+        for threshold in PAIRED_FEATURE_RETENTION_THRESHOLDS
     ],
 ]
 PAIRED_COLUMNS = ["parent1_gene_id", "parent2_gene_id"]
@@ -190,7 +197,7 @@ def summarize_table(library_id, table):
         f"retained_ge_{threshold}": int(
             (table["total_count"] >= threshold).sum()
         )
-        for threshold in RNA_RETENTION_THRESHOLDS
+        for threshold in PAIRED_FEATURE_RETENTION_THRESHOLDS
     }
 
     return {
@@ -381,11 +388,11 @@ def main():
         ),
         metavar=tuple(
             f"COLOR_{threshold}"
-            for threshold in RNA_RETENTION_THRESHOLDS
+            for threshold in PAIRED_FEATURE_RETENTION_THRESHOLDS
         ),
         help=(
             "Colors used for retention thresholds "
-            f"{', '.join(map(str, RNA_RETENTION_THRESHOLDS))}."
+            f"{', '.join(map(str, PAIRED_FEATURE_RETENTION_THRESHOLDS))}."
         ),
     )
     ap.add_argument("--parent1-label", default="Parent1", help="Parent1 name displayed in the report.")
@@ -478,10 +485,10 @@ def main():
     retention = build_retention_table(
         library_ids,
         tables,
-        RNA_RETENTION_THRESHOLDS,
+        PAIRED_FEATURE_RETENTION_THRESHOLDS,
     )
     write_retention(retention, Path(args.retention))
-    write_rna_gene_qc_report(
+    write_paired_feature_qc_report(
         tables,
         pooled,
         Path(args.report),
@@ -493,9 +500,11 @@ def main():
         depth_curve_alpha=args.depth_curve_alpha,
         retention=retention,
         retention_colors=args.retention_colors,
+        terminology=GENE_PAIR_TERMINOLOGY,
+        report_prefix="RNA gene",
     )
     if args.sample_report is not None:
-        write_rna_gene_qc_sample_report(
+        write_paired_feature_qc_sample_report(
             selected_sample_library_ids,
             selected_sample_tables,
             Path(args.sample_report),
@@ -503,6 +512,8 @@ def main():
             args.histogram_colors,
             args.parent1_label,
             args.parent2_label,
+            terminology=GENE_PAIR_TERMINOLOGY,
+            report_prefix="RNA gene",
         )
     return 0
 
