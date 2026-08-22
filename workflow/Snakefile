@@ -28,6 +28,9 @@ AGGREGATE_PAIRED_REGION_COUNTS_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "aggregate_paired_region_counts.py"
 )
 RNA_GENE_QC_SCRIPT = str(WORKFLOW_DIR / "scripts" / "rna_gene_qc.py")
+PEAK_PAIR_QC_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "peak_pair_qc.py"
+)
 MULTIQC_CONFIG = str(REPOSITORY_ROOT / "config" / "multiqc_config.yaml")
 
 

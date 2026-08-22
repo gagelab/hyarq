@@ -9,6 +9,12 @@ RNA_GENE_QC_REPORT = "results/reports/rna/gene_qc_report.pdf"
 RNA_GENE_QC_SAMPLE_REPORT = (
     "results/reports/rna/gene_qc_sample_report.pdf"
 )
+MOA_PEAK_QC_SUMMARY = "results/reports/moa/peak_qc_summary.tsv"
+MOA_PEAK_QC_RETENTION = "results/reports/moa/peak_qc_retention.tsv"
+MOA_PEAK_QC_REPORT = "results/reports/moa/peak_qc_report.pdf"
+MOA_PEAK_QC_SAMPLE_REPORT = (
+    "results/reports/moa/peak_qc_sample_report.pdf"
+)
 
 RNA_GENE_QC_SAMPLE_REPORT_ENABLED = (
     config["rna_gene_qc"]["sample_report"]["enabled"]
@@ -65,6 +71,64 @@ if RNA_GENE_QC_SAMPLE_REPORT_ENABLED:
             *RNA_GENE_QC_SAMPLE_REPORT_LIBRARIES,
             "--sample-plot-types",
             *RNA_GENE_QC_SAMPLE_REPORT_PLOT_TYPES,
+        ]
+    )
+
+MOA_PEAK_QC_SAMPLE_REPORT_ENABLED = (
+    config["moa_peak_qc"]["sample_report"]["enabled"]
+)
+MOA_PEAK_QC_SAMPLE_REPORT_LIBRARIES = (
+    config["moa_peak_qc"]["sample_report"]["libraries"]
+)
+MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES = (
+    config["moa_peak_qc"]["sample_report"]["plot_types"]
+)
+
+if not isinstance(MOA_PEAK_QC_SAMPLE_REPORT_ENABLED, bool):
+    raise ValueError(
+        "moa_peak_qc.sample_report.enabled must be a Boolean"
+    )
+if (
+    not isinstance(MOA_PEAK_QC_SAMPLE_REPORT_LIBRARIES, list)
+    or not MOA_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+    or any(
+        not isinstance(library_id, str) or not library_id
+        for library_id in MOA_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+    )
+):
+    raise ValueError(
+        "moa_peak_qc.sample_report.libraries must be a nonempty list "
+        "of nonempty strings"
+    )
+if (
+    not isinstance(MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES, list)
+    or not MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+    or any(
+        not isinstance(plot_type, str) or not plot_type
+        for plot_type in MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+    )
+):
+    raise ValueError(
+        "moa_peak_qc.sample_report.plot_types must be a nonempty list "
+        "of nonempty strings"
+    )
+
+MOA_PEAK_QC_OUTPUTS = [
+    MOA_PEAK_QC_SUMMARY,
+    MOA_PEAK_QC_RETENTION,
+    MOA_PEAK_QC_REPORT,
+]
+MOA_PEAK_QC_SAMPLE_REPORT_ARGS = ""
+if MOA_PEAK_QC_SAMPLE_REPORT_ENABLED:
+    MOA_PEAK_QC_OUTPUTS.append(MOA_PEAK_QC_SAMPLE_REPORT)
+    MOA_PEAK_QC_SAMPLE_REPORT_ARGS = shlex.join(
+        [
+            "--sample-report",
+            MOA_PEAK_QC_SAMPLE_REPORT,
+            "--sample-libraries",
+            *MOA_PEAK_QC_SAMPLE_REPORT_LIBRARIES,
+            "--sample-plot-types",
+            *MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES,
         ]
     )
 
@@ -132,8 +196,14 @@ rule rna_gene_qc:
         retention=RNA_GENE_QC_RETENTION,
         report=RNA_GENE_QC_REPORT,
         sample_report_args=RNA_GENE_QC_SAMPLE_REPORT_ARGS,
-        parent1_label=config["parents"]["parent1"]["prefix"],
-        parent2_label=config["parents"]["parent2"]["prefix"],
+        parent1_label=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["prefix"],
+            "parents.parent1.prefix",
+        ),
+        parent2_label=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["prefix"],
+            "parents.parent2.prefix",
+        ),
     threads: get_threads("rna_gene_qc")
     resources:
         mem_mb=get_mem_mb("rna_gene_qc"),
@@ -147,6 +217,51 @@ rule rna_gene_qc:
         mkdir -p "$(dirname {log:q})"
         python {input.script:q} \
             --count-tables {input.count_tables:q} \
+            --summary {params.summary:q} \
+            --retention {params.retention:q} \
+            --report {params.report:q} \
+            --parent1-label {params.parent1_label:q} \
+            --parent2-label {params.parent2_label:q} \
+            {params.sample_report_args} > {log:q} 2>&1
+        """
+
+
+rule moa_peak_qc:
+    input:
+        count_tables=expand(
+            "results/counts/moa/{library_id}/peak_counts.tsv",
+            library_id=MOA_LIBRARIES,
+        ),
+        script=PEAK_PAIR_QC_SCRIPT,
+    output:
+        MOA_PEAK_QC_OUTPUTS
+    params:
+        summary=MOA_PEAK_QC_SUMMARY,
+        retention=MOA_PEAK_QC_RETENTION,
+        report=MOA_PEAK_QC_REPORT,
+        sample_report_args=MOA_PEAK_QC_SAMPLE_REPORT_ARGS,
+        parent1_label=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["prefix"],
+            "parents.parent1.prefix",
+        ),
+        parent2_label=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["prefix"],
+            "parents.parent2.prefix",
+        ),
+    threads: get_threads("moa_peak_qc")
+    resources:
+        mem_mb=get_mem_mb("moa_peak_qc"),
+        runtime=get_runtime("moa_peak_qc"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/reports/moa/peak_qc.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --assay moa \
             --summary {params.summary:q} \
             --retention {params.retention:q} \
             --report {params.report:q} \
