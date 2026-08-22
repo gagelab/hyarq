@@ -91,6 +91,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "moa_multiqc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "rna_gene_qc": {
         "threads": 1,
         "mem_mb": 8000,

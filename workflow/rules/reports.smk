@@ -182,6 +182,51 @@ rule rna_multiqc:
         """
 
 
+rule moa_multiqc:
+    input:
+        raw_fastqc=expand(
+            "results/qc/fastqc/raw/{library_id}",
+            library_id=MOA_LIBRARIES,
+        ),
+        merged_fastqc=expand(
+            "results/qc/fastqc/merged/moa/{library_id}",
+            library_id=MOA_LIBRARIES,
+        ),
+        star_logs=expand(
+            "results/mapping/moa/{library_id}.Log.final.out",
+            library_id=MOA_LIBRARIES,
+        ),
+        config=MULTIQC_CONFIG,
+    output:
+        html="results/reports/moa/multiqc_report.html",
+        data=directory("results/reports/moa/multiqc_report_data"),
+    params:
+        outdir="results/reports/moa",
+    threads: get_threads("moa_multiqc")
+    resources:
+        mem_mb=get_mem_mb("moa_multiqc"),
+        runtime=get_runtime("moa_multiqc"),
+    conda:
+        "../envs/multiqc.yaml"
+    log:
+        "logs/reports/moa/multiqc.log"
+    shell:
+        r"""
+        mkdir -p {params.outdir:q}
+        mkdir -p "$(dirname {log:q})"
+        multiqc \
+            {input.raw_fastqc:q} \
+            {input.merged_fastqc:q} \
+            {input.star_logs:q} \
+            --outdir {params.outdir:q} \
+            --filename multiqc_report.html \
+            --config {input.config:q} \
+            --title "HyARQ MOA-seq QC" \
+            --force \
+            > {log:q} 2>&1
+        """
+
+
 rule rna_gene_qc:
     input:
         count_tables=expand(
