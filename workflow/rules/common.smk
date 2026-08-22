@@ -11,6 +11,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "build_concatenated_gtf": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "build_star_index": {
         "threads": 8,
         "mem_mb": 96000,

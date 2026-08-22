@@ -10,6 +10,9 @@ REPOSITORY_ROOT = WORKFLOW_DIR.parent
 BUILD_CONCATENATED_REFERENCE_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "build_concatenated_reference.sh"
 )
+BUILD_CONCATENATED_GTF_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "build_concatenated_gtf.sh"
+)
 VALIDATE_PAIRED_FEATURES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "validate_paired_features.py"
 )

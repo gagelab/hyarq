@@ -1,4 +1,8 @@
 # reference_id identifies one parental cross; prefixes are parental names without the trailing underscore.
+# All assays in one run must use the same two parental genome assemblies and
+# assembly versions. Prefix and FASTA values are required for all assays; GTF
+# values are required only when RNA libraries are present. MOA-, ATAC-, or
+# ChIP-only projects may leave GTF values blank.
 reference_id: ""
 
 parents:
@@ -37,6 +41,10 @@ moa:
 # execution profiles, not in this section.
 rule_resources:
   build_concatenated_reference:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  build_concatenated_gtf:
     threads: 1
     mem_mb: 8000
     runtime: 120
