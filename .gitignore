@@ -1,6 +1,7 @@
 # Snakemake
 .snakemake/
 *.snakemake.log
+profiles/slurm/config.yaml
 
 # Results and generated outputs
 results/

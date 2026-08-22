@@ -1,8 +1,27 @@
-# SLURM profile template for HyARQ.
-# Cluster-specific settings should be filled in locally and reviewed before use.
+# Slurm profile template for HyARQ; copy to profiles/slurm/config.yaml.
+# Edit account, partition, and QOS for your cluster; remove --qos if unused.
+# Adjust cores and jobs conservatively for your allocation.
+# HyARQ rules provide rule-level threads, memory, and runtime.
+# resources.runtime is minutes; bare Slurm --time={resources.runtime} is minutes.
+# The launcher environment needs snakemake-executor-plugin-cluster-generic.
+# Add an optional local conda-prefix if desired.
 
-jobs: 50
+executor: cluster-generic
+cores: 16
+jobs: 8
 latency-wait: 60
 rerun-incomplete: true
 printshellcmds: true
 use-conda: true
+
+cluster-generic-submit-cmd: >-
+  sbatch
+  --parsable
+  --account=YOUR_ACCOUNT
+  --partition=YOUR_PARTITION
+  --qos=YOUR_QOS
+  --cpus-per-task={threads}
+  --mem={resources.mem_mb}M
+  --time={resources.runtime}
+
+cluster-generic-cancel-cmd: scancel

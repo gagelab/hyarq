@@ -1,4 +1,4 @@
-# Default local Snakemake profile for HyARQ.
+# Local Snakemake profile for HyARQ.
 
 cores: 4
 printshellcmds: true
