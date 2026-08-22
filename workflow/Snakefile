@@ -45,16 +45,51 @@ include: "rules/chip.smk"
 include: "rules/moa.smk"
 include: "rules/reports.smk"
 
-rule all:
-    input:
+FINAL_TARGETS = []
+
+if RNA_LIBRARIES:
+    FINAL_TARGETS.extend(
         expand(
             "results/counts/rna/{library_id}/gene_counts.tsv",
             library_id=RNA_LIBRARIES,
-        ),
+        )
+    )
+    FINAL_TARGETS.extend(
         expand(
             "results/counts/rna/{library_id}/filter_summary.tsv",
             library_id=RNA_LIBRARIES,
-        ),
-        "results/counts/rna/gene_pair_count_matrix.tsv",
-        "results/reports/rna/multiqc_report.html",
-        RNA_GENE_QC_OUTPUTS,
+        )
+    )
+    FINAL_TARGETS.extend(
+        [
+            "results/counts/rna/gene_pair_count_matrix.tsv",
+            "results/reports/rna/multiqc_report.html",
+        ]
+    )
+    FINAL_TARGETS.extend(RNA_GENE_QC_OUTPUTS)
+
+if MOA_LIBRARIES:
+    FINAL_TARGETS.extend(
+        expand(
+            "results/counts/moa/{library_id}/peak_counts.tsv",
+            library_id=MOA_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/counts/moa/{library_id}/filter_summary.tsv",
+            library_id=MOA_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        [
+            "results/counts/moa/peak_pair_count_matrix.tsv",
+            "results/reports/moa/multiqc_report.html",
+        ]
+    )
+    FINAL_TARGETS.extend(MOA_PEAK_QC_OUTPUTS)
+
+
+rule all:
+    input:
+        FINAL_TARGETS
