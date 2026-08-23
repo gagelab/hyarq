@@ -2,7 +2,7 @@
 
 rule map_moa_star:
     input:
-        merged=rules.moa_ngmerge.output.merged,
+        merged=rules.moa_flash2.output.merged,
         index=lambda wildcards: configured_reference_path(
             "star_index"
         ),

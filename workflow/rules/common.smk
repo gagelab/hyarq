@@ -46,7 +46,7 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 240,
     },
-    "moa_ngmerge": {
+    "moa_flash2": {
         "threads": 4,
         "mem_mb": 8000,
         "runtime": 240,

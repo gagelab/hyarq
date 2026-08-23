@@ -4,4 +4,5 @@ channels:
   - nodefaults
 
 dependencies:
-  - ngmerge=0.5
+  - flash2=2.2.00
+  - gzip

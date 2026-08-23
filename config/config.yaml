@@ -25,11 +25,6 @@ moa:
     min_len: 20
     # qcut 0 intentionally disables quality trimming.
     qcut: 0
-  ngmerge:
-    mismatch_fraction: 0.2
-    min_overlap: 15
-    dovetail: true
-    min_dovetail_overlap: 30
   star:
     align_intron_max: 1
     out_sam_mult_nmax: 2
@@ -72,7 +67,7 @@ rule_resources:
     threads: 8
     mem_mb: 8000
     runtime: 240
-  moa_ngmerge:
+  moa_flash2:
     threads: 4
     mem_mb: 8000
     runtime: 240

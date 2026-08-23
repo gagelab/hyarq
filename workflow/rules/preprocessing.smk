@@ -97,49 +97,49 @@ rule moa_seqpurge:
         """
 
 
-rule moa_ngmerge:
+# FLASH2 2.2.00 settings match the validated MOA merging behavior.
+# Its native minimum-overlap default is intentionally retained.
+rule moa_flash2:
     input:
         r1=rules.moa_seqpurge.output.r1,
         r2=rules.moa_seqpurge.output.r2,
     output:
         merged="results/preprocessing/moa/{library_id}/{library_id}_merged.fq.gz",
-    threads: get_threads("moa_ngmerge")
+    threads: get_threads("moa_flash2")
     resources:
-        mem_mb=get_mem_mb("moa_ngmerge"),
-        runtime=get_runtime("moa_ngmerge"),
+        mem_mb=get_mem_mb("moa_flash2"),
+        runtime=get_runtime("moa_flash2"),
     conda:
-        "../envs/ngmerge.yaml"
+        "../envs/flash2.yaml"
     log:
-        "logs/ngmerge/moa/{library_id}.log"
-    params:
-        mismatch_fraction=config["moa"]["ngmerge"]["mismatch_fraction"],
-        min_overlap=config["moa"]["ngmerge"]["min_overlap"],
-        dovetail_args=(
-            f"-d -e {config['moa']['ngmerge']['min_dovetail_overlap']}"
-            if config["moa"]["ngmerge"]["dovetail"]
-            else ""
-        ),
+        "logs/flash2/moa/{library_id}.log"
     shell:
         """
         mkdir -p $(dirname {output.merged:q})
         mkdir -p $(dirname {log:q})
-        NGmerge \
-          -1 {input.r1:q} \
-          -2 {input.r2:q} \
-          -o {output.merged:q} \
-          -p {params.mismatch_fraction} \
-          -m {params.min_overlap} \
-          {params.dovetail_args} \
-          -n {threads} \
+        flash2_tmp=$(mktemp -d {resources.tmpdir:q}/hyarq_flash2.XXXXXX)
+        trap 'rm -rf -- "$flash2_tmp"' EXIT
+        flash2 \
+          {input.r1:q} \
+          {input.r2:q} \
+          -t {threads} \
+          --cap-mismatch-quals \
+          -M 100 \
           -z \
-          -v \
+          -d "$flash2_tmp" \
+          -o flash2 \
           > {log:q} 2>&1
+        mv "$flash2_tmp/flash2.extendedFrags.fastq.gz" {output.merged:q} \
+          >> {log:q} 2>&1
+        gzip -t {output.merged:q} >> {log:q} 2>&1
+        rm -rf -- "$flash2_tmp"
+        trap - EXIT
         """
 
 
 rule moa_merged_fastqc:
     input:
-        merged=rules.moa_ngmerge.output.merged,
+        merged=rules.moa_flash2.output.merged,
     output:
         directory("results/qc/fastqc/merged/moa/{library_id}")
     threads: get_threads("moa_merged_fastqc")
