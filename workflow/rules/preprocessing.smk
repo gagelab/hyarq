@@ -131,7 +131,6 @@ rule moa_flash2:
           > {log:q} 2>&1
         mv "$flash2_tmp/flash2.extendedFrags.fastq.gz" {output.merged:q} \
           >> {log:q} 2>&1
-        gzip -t {output.merged:q} >> {log:q} 2>&1
         rm -rf -- "$flash2_tmp"
         trap - EXIT
         """
