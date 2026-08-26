@@ -17,6 +17,7 @@ parents:
 
 rna_gene_pairs: ""
 moa_peak_pairs: ""
+atac_peak_pairs: ""
 
 moa:
   # MOA preprocessing and mapping defaults follow Engelhorn et al. 2025;
@@ -52,6 +53,10 @@ rule_resources:
     mem_mb: 2000
     runtime: 30
   validate_moa_peak_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  validate_atac_peak_pairs:
     threads: 1
     mem_mb: 2000
     runtime: 30

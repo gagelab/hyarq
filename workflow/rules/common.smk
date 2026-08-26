@@ -31,6 +31,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 2000,
         "runtime": 30,
     },
+    "validate_atac_peak_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
     "raw_fastqc": {
         "threads": 2,
         "mem_mb": 4000,
@@ -215,3 +220,4 @@ SAMPLES = SAMPLES.set_index("library_id", drop=False)
 LIBRARIES = list(SAMPLES.index)
 RNA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "rna"].index)
 MOA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "moa"].index)
+ATAC_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "atac"].index)

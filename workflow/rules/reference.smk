@@ -214,3 +214,28 @@ rule validate_moa_peak_pairs:
           --report {output.report:q} \
           > {log:q} 2>&1
         """
+
+
+rule validate_atac_peak_pairs:
+    input:
+        peak_pairs=lambda wildcards: require_config_value(
+            config["atac_peak_pairs"],
+            "atac_peak_pairs",
+        ),
+        script=VALIDATE_PAIRED_FEATURES_SCRIPT,
+    output:
+        report="results/qc/atac/peak_pairs_validation.tsv"
+    threads: get_threads("validate_atac_peak_pairs")
+    resources:
+        mem_mb=get_mem_mb("validate_atac_peak_pairs"),
+        runtime=get_runtime("validate_atac_peak_pairs"),
+    log:
+        "logs/validation/atac_peak_pairs.log"
+    shell:
+        """
+        mkdir -p $(dirname {log:q})
+        python {input.script:q} \
+          --peak-pairs {input.peak_pairs:q} \
+          --report {output.report:q} \
+          > {log:q} 2>&1
+        """
