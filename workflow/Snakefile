@@ -93,6 +93,18 @@ if MOA_LIBRARIES:
     FINAL_TARGETS.extend(MOA_PEAK_QC_OUTPUTS)
 
 if ATAC_LIBRARIES:
+    FINAL_TARGETS.extend(
+        expand(
+            "results/qc/fastqc/raw/{library_id}",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/qc/fastqc/clean/atac/{library_id}",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
     FINAL_TARGETS.append(
         "results/qc/atac/peak_pairs_validation.tsv"
     )

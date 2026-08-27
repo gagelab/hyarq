@@ -46,6 +46,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 240,
     },
+    "atac_fastp": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
     "moa_seqpurge": {
         "threads": 8,
         "mem_mb": 8000,
@@ -72,6 +77,11 @@ RULE_RESOURCE_DEFAULTS = {
         "runtime": 120,
     },
     "rna_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "atac_clean_fastqc": {
         "threads": 2,
         "mem_mb": 4000,
         "runtime": 120,
