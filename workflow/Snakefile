@@ -19,6 +19,9 @@ VALIDATE_PAIRED_FEATURES_SCRIPT = str(
 MAP_RNA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_rna_star.sh")
 MAP_MOA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_moa_star.sh")
 MAP_ATAC_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_atac_star.sh")
+DEDUPLICATE_ATAC_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "deduplicate_atac.sh"
+)
 COUNT_RNA_GENES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "count_rna_genes.sh"
 )
@@ -115,6 +118,18 @@ if ATAC_LIBRARIES:
     FINAL_TARGETS.extend(
         expand(
             "results/mapping/atac/{library_id}.mapping_summary.tsv",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/mapping/atac/{library_id}.dedup.bam",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/qc/samtools/atac/{library_id}.markdup.txt",
             library_id=ATAC_LIBRARIES,
         )
     )

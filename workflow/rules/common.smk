@@ -91,6 +91,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 64000,
         "runtime": 720,
     },
+    "deduplicate_atac": {
+        "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 240,
+    },
     "map_rna_star": {
         "threads": 8,
         "mem_mb": 64000,
