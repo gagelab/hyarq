@@ -1,23 +1,16 @@
 #!/bin/bash
 # map_atac_star.sh
-# Map one cleaned paired-end ATAC-seq library to the concatenated hybrid
-# reference with STAR DNA-style settings.
+# Map one cleaned paired-end ATAC-seq library with STAR and retain MAPQ-255
+# alignments.
 #
-# Required input:
-#   R1=/path/to/cleaned_R1.fastq.gz R2=/path/to/cleaned_R2.fastq.gz
+# Required: REFERENCE_ID, LIBRARY_ID, R1, R2, OUT_SAM_MULT_NMAX,
+# WIN_ANCHOR_MULTIMAP_NMAX, and OUT_BAM_SORTING_BINS_N.
 #
-# Optional convenience:
-#   READS_DIR=/cleaned/fastqs LIBRARY_ID=atac_rep1
-# derives R1=$READS_DIR/${LIBRARY_ID}_R1.fq.gz and R2=..._R2.fq.gz.
-#
-# Outputs:
-#   ${LIBRARY_ID}.Aligned.sortedByCoord.out.bam (+ .bai)
+# Outputs (OUTDIR, default results/mapping/atac):
+#   ${LIBRARY_ID}.Aligned.sortedByCoord.out.bam
+#   ${LIBRARY_ID}.unique.bam (+ .bai)
 #   ${LIBRARY_ID}.Log.final.out
 #   ${LIBRARY_ID}.mapping_summary.tsv
-#
-# ATAC keeps up to two STAR alignments so ambiguous fragments remain visible at
-# the mapping stage. Final allele-specific region counting applies downstream
-# MAPQ filtering and same-parent fragment checks.
 
 set -euo pipefail
 
@@ -41,51 +34,54 @@ for cmd in "$STAR_BIN" "$SAMTOOLS"; do
     require_cmd "$cmd"
 done
 
-REP=${REP:-1}
-SAMPLE=${SAMPLE:-atac}
-LIBRARY_ID=${LIBRARY_ID:-${SAMPLE}_rep${REP}}
-RUN_NAME=${RUN_NAME:-}
 REFERENCE_ID=${REFERENCE_ID:-}
-if [ -n "$REFERENCE_ID" ]; then
-    INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
-else
-    INDEX_DIR=${INDEX_DIR:-results/star_index}
-fi
-if [ -n "$RUN_NAME" ]; then
-    OUTDIR=${OUTDIR:-results/${RUN_NAME}/atac/${LIBRARY_ID}/mapping}
-else
-    OUTDIR=${OUTDIR:-results/mapping/atac}
-fi
-THREADS=${THREADS:-4}
+LIBRARY_ID=${LIBRARY_ID:-}
 R1=${R1:-}
 R2=${R2:-}
+OUT_SAM_MULT_NMAX=${OUT_SAM_MULT_NMAX:-}
+WIN_ANCHOR_MULTIMAP_NMAX=${WIN_ANCHOR_MULTIMAP_NMAX:-}
+OUT_BAM_SORTING_BINS_N=${OUT_BAM_SORTING_BINS_N:-}
 
-if [ -z "$R1" ] || [ -z "$R2" ]; then
-    if [ -n "${READS_DIR:-}" ]; then
-        R1=${R1:-${READS_DIR%/}/${LIBRARY_ID}_R1.fq.gz}
-        R2=${R2:-${READS_DIR%/}/${LIBRARY_ID}_R2.fq.gz}
-    else
-        die "set R1 and R2 to cleaned FASTQ inputs, or set READS_DIR with LIBRARY_ID=${LIBRARY_ID}"
-    fi
-fi
+[ -n "$REFERENCE_ID" ] || die "REFERENCE_ID is required"
+[ -n "$LIBRARY_ID" ] || die "LIBRARY_ID is required"
+[ -n "$R1" ] || die "R1 is required"
+[ -n "$R2" ] || die "R2 is required"
+[ -n "$OUT_SAM_MULT_NMAX" ] || die "OUT_SAM_MULT_NMAX is required"
+[ -n "$WIN_ANCHOR_MULTIMAP_NMAX" ] || die "WIN_ANCHOR_MULTIMAP_NMAX is required"
+[ -n "$OUT_BAM_SORTING_BINS_N" ] || die "OUT_BAM_SORTING_BINS_N is required"
 
-if [ -z "${READ_FILES_COMMAND:-}" ]; then
-    case "$R1:$R2" in
-        *.gz:*.gz) READ_FILES_COMMAND=zcat ;;
-        *) READ_FILES_COMMAND=cat ;;
-    esac
-fi
-require_cmd "${READ_FILES_COMMAND%% *}"
+INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
+OUTDIR=${OUTDIR:-results/mapping/atac}
+THREADS=${THREADS:-4}
+SAMPLE=${SAMPLE:-atac}
+REP=${REP:-1}
 
-[ -d "$INDEX_DIR" ] || die "STAR index not found: $INDEX_DIR"
-for f in "$R1" "$R2"; do
-    [ -f "$f" ] || die "input FASTQ not found: $f"
+for fastq in "$R1" "$R2"; do
+    [ -f "$fastq" ] || die "input FASTQ not found: $fastq"
 done
+[ -d "$INDEX_DIR" ] || die "STAR index not found: $INDEX_DIR"
+
+case "$R1:$R2" in
+    *.gz:*.gz) READ_FILES_COMMAND=zcat ;;
+    *) READ_FILES_COMMAND=cat ;;
+esac
+require_cmd "$READ_FILES_COMMAND"
 
 mkdir -p "$OUTDIR"
 PREFIX="$OUTDIR/${LIBRARY_ID}."
-BAM="${PREFIX}Aligned.sortedByCoord.out.bam"
+ALIGNED_BAM="${PREFIX}Aligned.sortedByCoord.out.bam"
+UNIQUE_BAM="${PREFIX}unique.bam"
+STAR_LOG="${PREFIX}Log.final.out"
+STAR_TMP="${PREFIX}_STARtmp"
 SUMMARY="$OUTDIR/${LIBRARY_ID}.mapping_summary.tsv"
+
+cleanup_star_tmp() {
+    rm -rf -- "$STAR_TMP"
+}
+
+# STAR refuses to reuse a stale temporary directory from an interrupted job.
+cleanup_star_tmp
+trap cleanup_star_tmp EXIT
 
 log "ATAC mapping: ${LIBRARY_ID}"
 echo "  R1     = $R1"
@@ -100,19 +96,29 @@ echo "  prefix = $PREFIX"
     --readFilesIn "$R1" "$R2" \
     --readFilesCommand "$READ_FILES_COMMAND" \
     --alignIntronMax 1 \
-    --outSAMmultNmax 2 \
-    --winAnchorMultimapNmax 100 \
-    --outBAMsortingBinsN 5 \
+    --outSAMmultNmax "$OUT_SAM_MULT_NMAX" \
+    --winAnchorMultimapNmax "$WIN_ANCHOR_MULTIMAP_NMAX" \
+    --outBAMsortingBinsN "$OUT_BAM_SORTING_BINS_N" \
     --outSAMtype BAM SortedByCoordinate \
     --outFileNamePrefix "$PREFIX"
 
-[ -s "$BAM" ] || die "STAR produced no BAM for ${LIBRARY_ID}"
-"$SAMTOOLS" index "$BAM"
+[ -s "$ALIGNED_BAM" ] || die "STAR produced no BAM for ${LIBRARY_ID}"
 
-alignment_records=$("$SAMTOOLS" view -c "$BAM")
+log "Filtering to unique alignments (MAPQ 255)"
+"$SAMTOOLS" view \
+    -b \
+    -q 255 \
+    -F 0x904 \
+    -o "$UNIQUE_BAM" \
+    "$ALIGNED_BAM"
+
+[ -s "$UNIQUE_BAM" ] || die "samtools produced no unique BAM for ${LIBRARY_ID}"
+"$SAMTOOLS" index "$UNIQUE_BAM"
+
+alignment_records=$("$SAMTOOLS" view -c "$ALIGNED_BAM")
+unique_records=$("$SAMTOOLS" view -c "$UNIQUE_BAM")
 {
     echo -e "metric\tvalue"
-    echo -e "run_name\t${RUN_NAME}"
     echo -e "reference_id\t${REFERENCE_ID}"
     echo -e "assay\tatac"
     echo -e "sample\t${SAMPLE}"
@@ -124,18 +130,31 @@ alignment_records=$("$SAMTOOLS" view -c "$BAM")
     echo -e "threads\t${THREADS}"
     echo -e "read_files_command\t${READ_FILES_COMMAND}"
     echo -e "align_intron_max\t1"
-    echo -e "out_sam_mult_nmax\t2"
+    echo -e "out_sam_mult_nmax\t${OUT_SAM_MULT_NMAX}"
+    echo -e "win_anchor_multimap_nmax\t${WIN_ANCHOR_MULTIMAP_NMAX}"
+    echo -e "out_bam_sorting_bins_n\t${OUT_BAM_SORTING_BINS_N}"
+    echo -e "mapq_min\t255"
     echo -e "alignment_records\t${alignment_records}"
-    echo -e "bam\t${BAM}"
+    echo -e "unique_records\t${unique_records}"
+    echo -e "aligned_bam\t${ALIGNED_BAM}"
+    echo -e "unique_bam\t${UNIQUE_BAM}"
 } > "$SUMMARY"
 
+# Only Log.final.out is retained from STAR's auxiliary alignment files.
+rm -f -- \
+    "${PREFIX}Log.out" \
+    "${PREFIX}Log.progress.out" \
+    "${PREFIX}SJ.out.tab"
+cleanup_star_tmp
+trap - EXIT
+
 echo ""
-log "ATAC mapping complete: $BAM"
-log_file="${PREFIX}Log.final.out"
-if [ -f "$log_file" ]; then
+log "ATAC mapping complete: $UNIQUE_BAM"
+if [ -f "$STAR_LOG" ]; then
     echo "--- STAR mapping summary (${LIBRARY_ID}) ---"
-    grep -E "Number of input reads|Uniquely mapped reads %|% of reads mapped to multiple loci|% of reads unmapped" "$log_file" \
+    grep -E "Number of input reads|Uniquely mapped reads %|% of reads mapped to multiple loci|% of reads unmapped" "$STAR_LOG" \
         | sed 's/^[[:space:]]*/  /'
 fi
 echo "  alignment records in BAM: $alignment_records"
+echo "  unique (MAPQ 255) records: $unique_records"
 echo "  mapping summary: $SUMMARY"

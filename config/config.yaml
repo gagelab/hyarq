@@ -36,6 +36,10 @@ atac:
     detect_adapter_for_pe: true
     correction: false
     length_required: 35
+  star:
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
+    out_bam_sorting_bins_n: 5
 
 # Portable per-job requirements. mem_mb is total memory for one job, and
 # runtime is in minutes. Adjust these values for your data and environment.
@@ -106,6 +110,10 @@ rule_resources:
     threads: 2
     mem_mb: 4000
     runtime: 120
+  map_atac_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
   map_rna_star:
     threads: 8
     mem_mb: 64000

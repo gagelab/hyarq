@@ -86,6 +86,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 4000,
         "runtime": 120,
     },
+    "map_atac_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
     "map_rna_star": {
         "threads": 8,
         "mem_mb": 64000,
