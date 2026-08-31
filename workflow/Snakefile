@@ -19,8 +19,14 @@ VALIDATE_PAIRED_FEATURES_SCRIPT = str(
 MAP_RNA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_rna_star.sh")
 MAP_MOA_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_moa_star.sh")
 MAP_ATAC_STAR_SCRIPT = str(WORKFLOW_DIR / "scripts" / "map_atac_star.sh")
+MAP_CHIP_STAR_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "map_chip_star.sh"
+)
 DEDUPLICATE_ATAC_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "deduplicate_atac.sh"
+)
+DEDUPLICATE_CHIP_SCRIPT = str(
+    WORKFLOW_DIR / "scripts" / "deduplicate_chip.sh"
 )
 COUNT_RNA_GENES_SCRIPT = str(
     WORKFLOW_DIR / "scripts" / "count_rna_genes.sh"

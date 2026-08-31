@@ -51,6 +51,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 240,
     },
+    "chip_fastp": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
     "moa_seqpurge": {
         "threads": 8,
         "mem_mb": 8000,
@@ -91,12 +96,27 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 4000,
         "runtime": 120,
     },
+    "chip_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
     "map_atac_star": {
         "threads": 8,
         "mem_mb": 64000,
         "runtime": 720,
     },
+    "map_chip_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
     "deduplicate_atac": {
+        "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 240,
+    },
+    "deduplicate_chip": {
         "threads": 4,
         "mem_mb": 16000,
         "runtime": 240,
@@ -256,3 +276,4 @@ LIBRARIES = list(SAMPLES.index)
 RNA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "rna"].index)
 MOA_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "moa"].index)
 ATAC_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "atac"].index)
+CHIP_LIBRARIES = list(SAMPLES.loc[SAMPLES["assay"] == "chip"].index)

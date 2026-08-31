@@ -41,6 +41,16 @@ atac:
     win_anchor_multimap_nmax: 100
     out_bam_sorting_bins_n: 5
 
+chip:
+  fastp:
+    detect_adapter_for_pe: true
+    correction: false
+    length_required: 35
+  star:
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
+    out_bam_sorting_bins_n: 5
+
 # Portable per-job requirements. mem_mb is total memory for one job, and
 # runtime is in minutes. Adjust these values for your data and environment.
 # Scheduler queues, partitions, accounts, and submission settings belong in
@@ -82,6 +92,10 @@ rule_resources:
     threads: 4
     mem_mb: 8000
     runtime: 240
+  chip_fastp:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
   moa_seqpurge:
     threads: 8
     mem_mb: 8000
@@ -118,11 +132,23 @@ rule_resources:
     threads: 2
     mem_mb: 4000
     runtime: 120
+  chip_clean_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
   map_atac_star:
     threads: 8
     mem_mb: 64000
     runtime: 720
+  map_chip_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
   deduplicate_atac:
+    threads: 4
+    mem_mb: 16000
+    runtime: 240
+  deduplicate_chip:
     threads: 4
     mem_mb: 16000
     runtime: 240
