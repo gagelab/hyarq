@@ -21,6 +21,12 @@ ATAC_PEAK_QC_REPORT = "results/reports/atac/peak_qc_report.pdf"
 ATAC_PEAK_QC_SAMPLE_REPORT = (
     "results/reports/atac/peak_qc_sample_report.pdf"
 )
+CHIP_PEAK_QC_SUMMARY = "results/reports/chip/peak_qc_summary.tsv"
+CHIP_PEAK_QC_RETENTION = "results/reports/chip/peak_qc_retention.tsv"
+CHIP_PEAK_QC_REPORT = "results/reports/chip/peak_qc_report.pdf"
+CHIP_PEAK_QC_SAMPLE_REPORT = (
+    "results/reports/chip/peak_qc_sample_report.pdf"
+)
 
 RNA_GENE_QC_SAMPLE_REPORT_ENABLED = (
     config["rna_gene_qc"]["sample_report"]["enabled"]
@@ -194,6 +200,66 @@ if ATAC_LIBRARIES:
                 *ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES,
                 "--sample-plot-types",
                 *ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES,
+            ]
+        )
+
+
+CHIP_PEAK_QC_OUTPUTS = [
+    CHIP_PEAK_QC_SUMMARY,
+    CHIP_PEAK_QC_RETENTION,
+    CHIP_PEAK_QC_REPORT,
+]
+CHIP_PEAK_QC_SAMPLE_REPORT_ARGS = ""
+if CHIP_LIBRARIES:
+    CHIP_PEAK_QC_SAMPLE_REPORT_ENABLED = (
+        config["chip_peak_qc"]["sample_report"]["enabled"]
+    )
+    CHIP_PEAK_QC_SAMPLE_REPORT_LIBRARIES = (
+        config["chip_peak_qc"]["sample_report"]["libraries"]
+    )
+    CHIP_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES = (
+        config["chip_peak_qc"]["sample_report"]["plot_types"]
+    )
+
+    if not isinstance(CHIP_PEAK_QC_SAMPLE_REPORT_ENABLED, bool):
+        raise ValueError(
+            "chip_peak_qc.sample_report.enabled must be a Boolean"
+        )
+    if (
+        not isinstance(CHIP_PEAK_QC_SAMPLE_REPORT_LIBRARIES, list)
+        or not CHIP_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+        or any(
+            not isinstance(library_id, str) or not library_id
+            for library_id in CHIP_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+        )
+    ):
+        raise ValueError(
+            "chip_peak_qc.sample_report.libraries must be a nonempty "
+            "list of nonempty strings"
+        )
+    if (
+        not isinstance(CHIP_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES, list)
+        or not CHIP_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+        or any(
+            not isinstance(plot_type, str) or not plot_type
+            for plot_type in CHIP_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+        )
+    ):
+        raise ValueError(
+            "chip_peak_qc.sample_report.plot_types must be a nonempty "
+            "list of nonempty strings"
+        )
+
+    if CHIP_PEAK_QC_SAMPLE_REPORT_ENABLED:
+        CHIP_PEAK_QC_OUTPUTS.append(CHIP_PEAK_QC_SAMPLE_REPORT)
+        CHIP_PEAK_QC_SAMPLE_REPORT_ARGS = shlex.join(
+            [
+                "--sample-report",
+                CHIP_PEAK_QC_SAMPLE_REPORT,
+                "--sample-libraries",
+                *CHIP_PEAK_QC_SAMPLE_REPORT_LIBRARIES,
+                "--sample-plot-types",
+                *CHIP_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES,
             ]
         )
 
@@ -417,6 +483,51 @@ rule atac_peak_qc:
         python {input.script:q} \
             --count-tables {input.count_tables:q} \
             --assay atac \
+            --summary {params.summary:q} \
+            --retention {params.retention:q} \
+            --report {params.report:q} \
+            --parent1-label {params.parent1_label:q} \
+            --parent2-label {params.parent2_label:q} \
+            {params.sample_report_args} > {log:q} 2>&1
+        """
+
+
+rule chip_peak_qc:
+    input:
+        count_tables=expand(
+            "results/counts/chip/{library_id}/peak_counts.tsv",
+            library_id=CHIP_LIBRARIES,
+        ),
+        script=PEAK_PAIR_QC_SCRIPT,
+    output:
+        CHIP_PEAK_QC_OUTPUTS
+    params:
+        summary=CHIP_PEAK_QC_SUMMARY,
+        retention=CHIP_PEAK_QC_RETENTION,
+        report=CHIP_PEAK_QC_REPORT,
+        sample_report_args=CHIP_PEAK_QC_SAMPLE_REPORT_ARGS,
+        parent1_label=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["prefix"],
+            "parents.parent1.prefix",
+        ),
+        parent2_label=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["prefix"],
+            "parents.parent2.prefix",
+        ),
+    threads: get_threads("chip_peak_qc")
+    resources:
+        mem_mb=get_mem_mb("chip_peak_qc"),
+        runtime=get_runtime("chip_peak_qc"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/reports/chip/peak_qc.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --assay chip \
             --summary {params.summary:q} \
             --retention {params.retention:q} \
             --report {params.report:q} \
