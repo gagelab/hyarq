@@ -76,6 +76,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "count_atac_peaks": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "rna_clean_fastqc": {
         "threads": 2,
         "mem_mb": 4000,

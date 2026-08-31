@@ -31,6 +31,9 @@ SUMMARY_CATEGORIES = (
     "Unassigned_Unmapped",
     "Unassigned_MultiMapping",
 )
+PAIRED_END_SUMMARY_CATEGORIES = SUMMARY_CATEGORIES + (
+    "Unassigned_Ambiguity",
+)
 PAIREDNESS_SAMPLE_SIZE = 4096
 
 
@@ -56,8 +59,8 @@ def positive_int(value):
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            "Count a filtered single-end BAM against a six-column paired-region "
-            "table using featureCounts."
+            "Count a filtered BAM against a six-column paired-region table "
+            "using featureCounts."
         )
     )
     parser.add_argument("--bam", required=True)
@@ -72,6 +75,11 @@ def parse_args():
     parser.add_argument("--rep", required=True)
     parser.add_argument("--library-id", required=True)
     parser.add_argument("--threads", required=True, type=positive_int)
+    parser.add_argument(
+        "--paired-end",
+        action="store_true",
+        help="count paired-end fragments instead of single-end alignments",
+    )
     parser.add_argument("--featurecounts", default="featureCounts")
     parser.add_argument("--samtools", default="samtools")
     return parser.parse_args()
@@ -323,7 +331,12 @@ def run_featurecounts(args, saf, raw_output, workdir):
         "SAF",
         "-s",
         "0",
-        "-O",
+    ]
+    if args.paired_end:
+        command.extend(("-p", "--countReadPairs"))
+    else:
+        command.append("-O")
+    command.extend([
         "--minOverlap",
         "1",
         "-T",
@@ -335,7 +348,7 @@ def run_featurecounts(args, saf, raw_output, workdir):
         "-o",
         str(raw_output),
         str(args.bam),
-    ]
+    ])
     with featurecounts_log.open("w") as log_output:
         try:
             subprocess.run(
@@ -413,7 +426,7 @@ def parse_featurecounts(path, expected_feature_ids):
     return counts
 
 
-def parse_featurecounts_summary(path):
+def parse_featurecounts_summary(path, selected_categories):
     selected = {}
     with path.open(newline="") as source:
         reader = csv.reader(source, delimiter="\t")
@@ -433,7 +446,7 @@ def parse_featurecounts_summary(path):
                     f"{path}:{line_number}: malformed featureCounts summary row"
                 )
             category = fields[0]
-            if category not in SUMMARY_CATEGORIES:
+            if category not in selected_categories:
                 continue
             if category in selected:
                 raise CountingError(
@@ -469,6 +482,16 @@ def write_summary(
     featurecounts_summary,
     path,
 ):
+    selected_categories = (
+        PAIRED_END_SUMMARY_CATEGORIES
+        if args.paired_end
+        else SUMMARY_CATEGORIES
+    )
+    multi_feature_assignment = (
+        "featurecounts_default_ambiguous_exclusion"
+        if args.paired_end
+        else "all_overlaps"
+    )
     metrics = [
         ("assay", args.assay),
         ("sample", args.sample),
@@ -480,13 +503,13 @@ def write_summary(
         ("parent2_prefix", args.parent2_prefix),
         ("featurecounts_version", featurecounts_version),
         ("overlap_min_bp", 1),
-        ("multi_feature_assignment", "all_overlaps"),
+        ("multi_feature_assignment", multi_feature_assignment),
         ("peak_pair_rows", pair_rows),
         ("peak_features", pair_rows * 2),
     ]
     metrics.extend(
         (category, featurecounts_summary[category])
-        for category in SUMMARY_CATEGORIES
+        for category in selected_categories
         if category in featurecounts_summary
     )
 
@@ -515,8 +538,11 @@ def run(args, workdir):
         bam_contigs(args.samtools, Path(args.bam)),
     )
 
-    log("Checking sampled mapped alignments for paired-end flags")
-    check_single_end_bam(args.samtools, Path(args.bam))
+    if args.paired_end:
+        log("Using explicit paired-end fragment counting mode")
+    else:
+        log("Checking sampled mapped alignments for paired-end flags")
+        check_single_end_bam(args.samtools, Path(args.bam))
 
     featurecounts_version = get_featurecounts_version(args.featurecounts)
     log(f"Counting {len(feature_ids)} features across {len(rows)} paired rows")
@@ -527,8 +553,14 @@ def run(args, workdir):
         workdir,
     )
     counts = parse_featurecounts(raw_output, feature_ids)
+    selected_categories = (
+        PAIRED_END_SUMMARY_CATEGORIES
+        if args.paired_end
+        else SUMMARY_CATEGORIES
+    )
     featurecounts_summary = parse_featurecounts_summary(
-        featurecounts_summary_path
+        featurecounts_summary_path,
+        selected_categories,
     )
 
     write_counts(rows, counts, Path(args.output))

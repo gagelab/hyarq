@@ -133,6 +133,18 @@ if ATAC_LIBRARIES:
             library_id=ATAC_LIBRARIES,
         )
     )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/counts/atac/{library_id}/peak_counts.tsv",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
+    FINAL_TARGETS.extend(
+        expand(
+            "results/counts/atac/{library_id}/filter_summary.tsv",
+            library_id=ATAC_LIBRARIES,
+        )
+    )
     FINAL_TARGETS.append(
         "results/qc/atac/peak_pairs_validation.tsv"
     )
