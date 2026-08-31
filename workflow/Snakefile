@@ -151,6 +151,7 @@ if ATAC_LIBRARIES:
     FINAL_TARGETS.append(
         "results/qc/atac/peak_pairs_validation.tsv"
     )
+    FINAL_TARGETS.extend(ATAC_PEAK_QC_OUTPUTS)
 
 
 rule all:

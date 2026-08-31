@@ -146,6 +146,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "atac_peak_qc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
 }
 RULE_RESOURCE_FIELDS = frozenset(("threads", "mem_mb", "runtime"))
 

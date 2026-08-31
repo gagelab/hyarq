@@ -15,6 +15,12 @@ MOA_PEAK_QC_REPORT = "results/reports/moa/peak_qc_report.pdf"
 MOA_PEAK_QC_SAMPLE_REPORT = (
     "results/reports/moa/peak_qc_sample_report.pdf"
 )
+ATAC_PEAK_QC_SUMMARY = "results/reports/atac/peak_qc_summary.tsv"
+ATAC_PEAK_QC_RETENTION = "results/reports/atac/peak_qc_retention.tsv"
+ATAC_PEAK_QC_REPORT = "results/reports/atac/peak_qc_report.pdf"
+ATAC_PEAK_QC_SAMPLE_REPORT = (
+    "results/reports/atac/peak_qc_sample_report.pdf"
+)
 
 RNA_GENE_QC_SAMPLE_REPORT_ENABLED = (
     config["rna_gene_qc"]["sample_report"]["enabled"]
@@ -131,6 +137,65 @@ if MOA_PEAK_QC_SAMPLE_REPORT_ENABLED:
             *MOA_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES,
         ]
     )
+
+ATAC_PEAK_QC_OUTPUTS = [
+    ATAC_PEAK_QC_SUMMARY,
+    ATAC_PEAK_QC_RETENTION,
+    ATAC_PEAK_QC_REPORT,
+]
+ATAC_PEAK_QC_SAMPLE_REPORT_ARGS = ""
+if ATAC_LIBRARIES:
+    ATAC_PEAK_QC_SAMPLE_REPORT_ENABLED = (
+        config["atac_peak_qc"]["sample_report"]["enabled"]
+    )
+    ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES = (
+        config["atac_peak_qc"]["sample_report"]["libraries"]
+    )
+    ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES = (
+        config["atac_peak_qc"]["sample_report"]["plot_types"]
+    )
+
+    if not isinstance(ATAC_PEAK_QC_SAMPLE_REPORT_ENABLED, bool):
+        raise ValueError(
+            "atac_peak_qc.sample_report.enabled must be a Boolean"
+        )
+    if (
+        not isinstance(ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES, list)
+        or not ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+        or any(
+            not isinstance(library_id, str) or not library_id
+            for library_id in ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES
+        )
+    ):
+        raise ValueError(
+            "atac_peak_qc.sample_report.libraries must be a nonempty "
+            "list of nonempty strings"
+        )
+    if (
+        not isinstance(ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES, list)
+        or not ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+        or any(
+            not isinstance(plot_type, str) or not plot_type
+            for plot_type in ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES
+        )
+    ):
+        raise ValueError(
+            "atac_peak_qc.sample_report.plot_types must be a nonempty "
+            "list of nonempty strings"
+        )
+
+    if ATAC_PEAK_QC_SAMPLE_REPORT_ENABLED:
+        ATAC_PEAK_QC_OUTPUTS.append(ATAC_PEAK_QC_SAMPLE_REPORT)
+        ATAC_PEAK_QC_SAMPLE_REPORT_ARGS = shlex.join(
+            [
+                "--sample-report",
+                ATAC_PEAK_QC_SAMPLE_REPORT,
+                "--sample-libraries",
+                *ATAC_PEAK_QC_SAMPLE_REPORT_LIBRARIES,
+                "--sample-plot-types",
+                *ATAC_PEAK_QC_SAMPLE_REPORT_PLOT_TYPES,
+            ]
+        )
 
 
 rule rna_multiqc:
@@ -307,6 +372,51 @@ rule moa_peak_qc:
         python {input.script:q} \
             --count-tables {input.count_tables:q} \
             --assay moa \
+            --summary {params.summary:q} \
+            --retention {params.retention:q} \
+            --report {params.report:q} \
+            --parent1-label {params.parent1_label:q} \
+            --parent2-label {params.parent2_label:q} \
+            {params.sample_report_args} > {log:q} 2>&1
+        """
+
+
+rule atac_peak_qc:
+    input:
+        count_tables=expand(
+            "results/counts/atac/{library_id}/peak_counts.tsv",
+            library_id=ATAC_LIBRARIES,
+        ),
+        script=PEAK_PAIR_QC_SCRIPT,
+    output:
+        ATAC_PEAK_QC_OUTPUTS
+    params:
+        summary=ATAC_PEAK_QC_SUMMARY,
+        retention=ATAC_PEAK_QC_RETENTION,
+        report=ATAC_PEAK_QC_REPORT,
+        sample_report_args=ATAC_PEAK_QC_SAMPLE_REPORT_ARGS,
+        parent1_label=lambda wildcards: require_config_value(
+            config["parents"]["parent1"]["prefix"],
+            "parents.parent1.prefix",
+        ),
+        parent2_label=lambda wildcards: require_config_value(
+            config["parents"]["parent2"]["prefix"],
+            "parents.parent2.prefix",
+        ),
+    threads: get_threads("atac_peak_qc")
+    resources:
+        mem_mb=get_mem_mb("atac_peak_qc"),
+        runtime=get_runtime("atac_peak_qc"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/reports/atac/peak_qc.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --assay atac \
             --summary {params.summary:q} \
             --retention {params.retention:q} \
             --report {params.report:q} \

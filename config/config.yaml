@@ -150,6 +150,10 @@ rule_resources:
     threads: 1
     mem_mb: 8000
     runtime: 120
+  atac_peak_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
 
 # Optional sample report; disabled by default.
 rna_gene_qc:
@@ -162,6 +166,15 @@ rna_gene_qc:
       - scatter
 
 moa_peak_qc:
+  sample_report:
+    enabled: false
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
+atac_peak_qc:
   sample_report:
     enabled: false
     libraries:
