@@ -358,6 +358,106 @@ rule moa_multiqc:
         """
 
 
+rule atac_multiqc:
+    input:
+        raw_fastqc=expand(
+            "results/qc/fastqc/raw/{library_id}",
+            library_id=ATAC_LIBRARIES,
+        ),
+        clean_fastqc=expand(
+            "results/qc/fastqc/clean/atac/{library_id}",
+            library_id=ATAC_LIBRARIES,
+        ),
+        fastp_json=expand(
+            "results/qc/fastp/atac/{library_id}.json",
+            library_id=ATAC_LIBRARIES,
+        ),
+        star_logs=expand(
+            "results/mapping/atac/{library_id}.Log.final.out",
+            library_id=ATAC_LIBRARIES,
+        ),
+        config=MULTIQC_CONFIG,
+    output:
+        html="results/reports/atac/multiqc_report.html",
+        data=directory("results/reports/atac/multiqc_report_data"),
+    params:
+        outdir="results/reports/atac",
+    threads: get_threads("atac_multiqc")
+    resources:
+        mem_mb=get_mem_mb("atac_multiqc"),
+        runtime=get_runtime("atac_multiqc"),
+    conda:
+        "../envs/multiqc.yaml"
+    log:
+        "logs/reports/atac/multiqc.log"
+    shell:
+        r"""
+        mkdir -p {params.outdir:q}
+        mkdir -p "$(dirname {log:q})"
+        multiqc \
+            {input.raw_fastqc:q} \
+            {input.clean_fastqc:q} \
+            {input.fastp_json:q} \
+            {input.star_logs:q} \
+            --outdir {params.outdir:q} \
+            --filename multiqc_report.html \
+            --config {input.config:q} \
+            --title "HyARQ ATAC-seq QC" \
+            --force \
+            > {log:q} 2>&1
+        """
+
+
+rule chip_multiqc:
+    input:
+        raw_fastqc=expand(
+            "results/qc/fastqc/raw/{library_id}",
+            library_id=CHIP_LIBRARIES,
+        ),
+        clean_fastqc=expand(
+            "results/qc/fastqc/clean/chip/{library_id}",
+            library_id=CHIP_LIBRARIES,
+        ),
+        fastp_json=expand(
+            "results/qc/fastp/chip/{library_id}.json",
+            library_id=CHIP_LIBRARIES,
+        ),
+        star_logs=expand(
+            "results/mapping/chip/{library_id}.Log.final.out",
+            library_id=CHIP_LIBRARIES,
+        ),
+        config=MULTIQC_CONFIG,
+    output:
+        html="results/reports/chip/multiqc_report.html",
+        data=directory("results/reports/chip/multiqc_report_data"),
+    params:
+        outdir="results/reports/chip",
+    threads: get_threads("chip_multiqc")
+    resources:
+        mem_mb=get_mem_mb("chip_multiqc"),
+        runtime=get_runtime("chip_multiqc"),
+    conda:
+        "../envs/multiqc.yaml"
+    log:
+        "logs/reports/chip/multiqc.log"
+    shell:
+        r"""
+        mkdir -p {params.outdir:q}
+        mkdir -p "$(dirname {log:q})"
+        multiqc \
+            {input.raw_fastqc:q} \
+            {input.clean_fastqc:q} \
+            {input.fastp_json:q} \
+            {input.star_logs:q} \
+            --outdir {params.outdir:q} \
+            --filename multiqc_report.html \
+            --config {input.config:q} \
+            --title "HyARQ ChIP-seq QC" \
+            --force \
+            > {log:q} 2>&1
+        """
+
+
 rule rna_gene_qc:
     input:
         count_tables=expand(

@@ -151,8 +151,11 @@ if ATAC_LIBRARIES:
             library_id=ATAC_LIBRARIES,
         )
     )
-    FINAL_TARGETS.append(
-        "results/counts/atac/peak_pair_count_matrix.tsv"
+    FINAL_TARGETS.extend(
+        [
+            "results/counts/atac/peak_pair_count_matrix.tsv",
+            "results/reports/atac/multiqc_report.html",
+        ]
     )
     FINAL_TARGETS.append(
         "results/qc/atac/peak_pairs_validation.tsv"
@@ -208,8 +211,11 @@ if CHIP_LIBRARIES:
             library_id=CHIP_LIBRARIES,
         )
     )
-    FINAL_TARGETS.append(
-        "results/counts/chip/peak_pair_count_matrix.tsv"
+    FINAL_TARGETS.extend(
+        [
+            "results/counts/chip/peak_pair_count_matrix.tsv",
+            "results/reports/chip/multiqc_report.html",
+        ]
     )
     FINAL_TARGETS.append(
         "results/qc/chip/peak_pairs_validation.tsv"
