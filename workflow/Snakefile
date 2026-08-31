@@ -146,6 +146,9 @@ if ATAC_LIBRARIES:
         )
     )
     FINAL_TARGETS.append(
+        "results/counts/atac/peak_pair_count_matrix.tsv"
+    )
+    FINAL_TARGETS.append(
         "results/qc/atac/peak_pairs_validation.tsv"
     )
 

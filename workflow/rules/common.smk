@@ -121,6 +121,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "aggregate_atac_peak_counts": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "rna_multiqc": {
         "threads": 1,
         "mem_mb": 8000,
