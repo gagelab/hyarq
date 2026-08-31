@@ -36,6 +36,11 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 2000,
         "runtime": 30,
     },
+    "validate_chip_peak_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
     "raw_fastqc": {
         "threads": 2,
         "mem_mb": 4000,
@@ -82,6 +87,11 @@ RULE_RESOURCE_DEFAULTS = {
         "runtime": 120,
     },
     "count_atac_peaks": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "count_chip_peaks": {
         "threads": 1,
         "mem_mb": 8000,
         "runtime": 120,
@@ -142,6 +152,11 @@ RULE_RESOURCE_DEFAULTS = {
         "runtime": 120,
     },
     "aggregate_atac_peak_counts": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "aggregate_chip_peak_counts": {
         "threads": 1,
         "mem_mb": 8000,
         "runtime": 120,

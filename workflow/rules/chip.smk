@@ -85,3 +85,76 @@ rule deduplicate_chip:
         LIBRARY_ID={wildcards.library_id:q} \
         bash {input.script:q} > {log:q} 2>&1
         """
+
+
+rule count_chip_peaks:
+    input:
+        bam=rules.deduplicate_chip.output.bam,
+        peak_pairs=lambda wildcards: require_config_value(
+            config["chip_peak_pairs"],
+            "chip_peak_pairs",
+        ),
+        validation=rules.validate_chip_peak_pairs.output,
+        script=COUNT_PAIRED_REGIONS_SCRIPT,
+    output:
+        peak_counts="results/counts/chip/{library_id}/peak_counts.tsv",
+        filter_summary="results/counts/chip/{library_id}/filter_summary.tsv",
+    params:
+        sample=lambda wildcards: SAMPLES.loc[wildcards.library_id, "sample_id"],
+        replicate=lambda wildcards: SAMPLES.loc[wildcards.library_id, "replicate"],
+        parent1_prefix=config["parents"]["parent1"]["prefix"],
+        parent2_prefix=config["parents"]["parent2"]["prefix"],
+    threads: get_threads("count_chip_peaks")
+    resources:
+        mem_mb=get_mem_mb("count_chip_peaks"),
+        runtime=get_runtime("count_chip_peaks"),
+    conda:
+        "../envs/rna_counting.yaml"
+    log:
+        "logs/counts/chip/{library_id}.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --bam {input.bam:q} \
+            --peak-pairs {input.peak_pairs:q} \
+            --parent1-prefix {params.parent1_prefix:q} \
+            --parent2-prefix {params.parent2_prefix:q} \
+            --output {output.peak_counts:q} \
+            --summary {output.filter_summary:q} \
+            --tmpdir {resources.tmpdir:q} \
+            --assay chip \
+            --sample {params.sample:q} \
+            --rep {params.replicate:q} \
+            --library-id {wildcards.library_id:q} \
+            --threads {threads} \
+            --paired-end \
+            > {log:q} 2>&1
+        """
+
+
+rule aggregate_chip_peak_counts:
+    input:
+        count_tables=expand(
+            "results/counts/chip/{library_id}/peak_counts.tsv",
+            library_id=CHIP_LIBRARIES,
+        ),
+        script=AGGREGATE_PAIRED_REGION_COUNTS_SCRIPT,
+    output:
+        matrix="results/counts/chip/peak_pair_count_matrix.tsv",
+    threads: 1
+    resources:
+        mem_mb=get_mem_mb("aggregate_chip_peak_counts"),
+        runtime=get_runtime("aggregate_chip_peak_counts"),
+    conda:
+        "../envs/rna_gene_qc.yaml"
+    log:
+        "logs/counting/chip/aggregate_peak_counts.log"
+    shell:
+        r"""
+        mkdir -p "$(dirname {log:q})"
+        python {input.script:q} \
+            --count-tables {input.count_tables:q} \
+            --output {output.matrix:q} \
+            > {log:q} 2>&1
+        """

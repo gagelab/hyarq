@@ -239,3 +239,28 @@ rule validate_atac_peak_pairs:
           --report {output.report:q} \
           > {log:q} 2>&1
         """
+
+
+rule validate_chip_peak_pairs:
+    input:
+        peak_pairs=lambda wildcards: require_config_value(
+            config["chip_peak_pairs"],
+            "chip_peak_pairs",
+        ),
+        script=VALIDATE_PAIRED_FEATURES_SCRIPT,
+    output:
+        report="results/qc/chip/peak_pairs_validation.tsv"
+    threads: get_threads("validate_chip_peak_pairs")
+    resources:
+        mem_mb=get_mem_mb("validate_chip_peak_pairs"),
+        runtime=get_runtime("validate_chip_peak_pairs"),
+    log:
+        "logs/validation/chip_peak_pairs.log"
+    shell:
+        """
+        mkdir -p $(dirname {log:q})
+        python {input.script:q} \
+          --peak-pairs {input.peak_pairs:q} \
+          --report {output.report:q} \
+          > {log:q} 2>&1
+        """
