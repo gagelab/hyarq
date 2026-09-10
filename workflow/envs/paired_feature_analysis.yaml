@@ -6,3 +6,4 @@ dependencies:
 - python=3.12
 - pandas=2.3
 - matplotlib-base=3.10
+- numpy

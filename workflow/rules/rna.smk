@@ -73,7 +73,7 @@ rule count_rna_genes:
         mem_mb=get_mem_mb("count_rna_genes"),
         runtime=get_runtime("count_rna_genes"),
     conda:
-        "../envs/rna_counting.yaml"
+        "../envs/feature_counting.yaml"
     log:
         "logs/counting/rna/{library_id}.log"
     shell:
@@ -108,7 +108,7 @@ rule aggregate_rna_gene_counts:
         mem_mb=get_mem_mb("aggregate_rna_gene_counts"),
         runtime=get_runtime("aggregate_rna_gene_counts"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/counting/rna/aggregate_gene_counts.log"
     shell:

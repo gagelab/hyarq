@@ -21,45 +21,55 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 96000,
         "runtime": 720,
     },
-    "validate_rna_gene_pairs": {
-        "threads": 1,
-        "mem_mb": 2000,
-        "runtime": 30,
-    },
-    "validate_moa_peak_pairs": {
-        "threads": 1,
-        "mem_mb": 2000,
-        "runtime": 30,
-    },
-    "validate_atac_peak_pairs": {
-        "threads": 1,
-        "mem_mb": 2000,
-        "runtime": 30,
-    },
-    "validate_chip_peak_pairs": {
-        "threads": 1,
-        "mem_mb": 2000,
-        "runtime": 30,
-    },
     "raw_fastqc": {
         "threads": 2,
         "mem_mb": 4000,
         "runtime": 120,
+    },
+    "validate_rna_gene_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
     },
     "rna_fastp": {
         "threads": 4,
         "mem_mb": 8000,
         "runtime": 240,
     },
-    "atac_fastp": {
-        "threads": 4,
-        "mem_mb": 8000,
-        "runtime": 240,
+    "rna_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
     },
-    "chip_fastp": {
+    "map_rna_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
+    "count_rna_genes": {
         "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 360,
+    },
+    "aggregate_rna_gene_counts": {
+        "threads": 1,
         "mem_mb": 8000,
-        "runtime": 240,
+        "runtime": 120,
+    },
+    "rna_multiqc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "rna_gene_qc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "validate_moa_peak_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
     },
     "moa_seqpurge": {
         "threads": 8,
@@ -86,82 +96,7 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
-    "count_atac_peaks": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "count_chip_peaks": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "rna_clean_fastqc": {
-        "threads": 2,
-        "mem_mb": 4000,
-        "runtime": 120,
-    },
-    "atac_clean_fastqc": {
-        "threads": 2,
-        "mem_mb": 4000,
-        "runtime": 120,
-    },
-    "chip_clean_fastqc": {
-        "threads": 2,
-        "mem_mb": 4000,
-        "runtime": 120,
-    },
-    "map_atac_star": {
-        "threads": 8,
-        "mem_mb": 64000,
-        "runtime": 720,
-    },
-    "map_chip_star": {
-        "threads": 8,
-        "mem_mb": 64000,
-        "runtime": 720,
-    },
-    "deduplicate_atac": {
-        "threads": 4,
-        "mem_mb": 16000,
-        "runtime": 240,
-    },
-    "deduplicate_chip": {
-        "threads": 4,
-        "mem_mb": 16000,
-        "runtime": 240,
-    },
-    "map_rna_star": {
-        "threads": 8,
-        "mem_mb": 64000,
-        "runtime": 720,
-    },
-    "count_rna_genes": {
-        "threads": 4,
-        "mem_mb": 16000,
-        "runtime": 360,
-    },
-    "aggregate_rna_gene_counts": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
     "aggregate_moa_peak_counts": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "aggregate_atac_peak_counts": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "aggregate_chip_peak_counts": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "rna_multiqc": {
         "threads": 1,
         "mem_mb": 8000,
         "runtime": 120,
@@ -171,27 +106,92 @@ RULE_RESOURCE_DEFAULTS = {
         "mem_mb": 8000,
         "runtime": 120,
     },
-    "atac_multiqc": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "chip_multiqc": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
-    "rna_gene_qc": {
-        "threads": 1,
-        "mem_mb": 8000,
-        "runtime": 120,
-    },
     "moa_peak_qc": {
         "threads": 1,
         "mem_mb": 8000,
         "runtime": 120,
     },
+    "validate_atac_peak_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
+    "atac_fastp": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
+    "atac_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "map_atac_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
+    "deduplicate_atac": {
+        "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 240,
+    },
+    "count_atac_peaks": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "aggregate_atac_peak_counts": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "atac_multiqc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
     "atac_peak_qc": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "validate_chip_peak_pairs": {
+        "threads": 1,
+        "mem_mb": 2000,
+        "runtime": 30,
+    },
+    "chip_fastp": {
+        "threads": 4,
+        "mem_mb": 8000,
+        "runtime": 240,
+    },
+    "chip_clean_fastqc": {
+        "threads": 2,
+        "mem_mb": 4000,
+        "runtime": 120,
+    },
+    "map_chip_star": {
+        "threads": 8,
+        "mem_mb": 64000,
+        "runtime": 720,
+    },
+    "deduplicate_chip": {
+        "threads": 4,
+        "mem_mb": 16000,
+        "runtime": 240,
+    },
+    "count_chip_peaks": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "aggregate_chip_peak_counts": {
+        "threads": 1,
+        "mem_mb": 8000,
+        "runtime": 120,
+    },
+    "chip_multiqc": {
         "threads": 1,
         "mem_mb": 8000,
         "runtime": 120,

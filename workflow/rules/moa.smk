@@ -72,9 +72,9 @@ rule count_moa_peaks:
         mem_mb=get_mem_mb("count_moa_peaks"),
         runtime=get_runtime("count_moa_peaks"),
     conda:
-        "../envs/rna_counting.yaml"
+        "../envs/feature_counting.yaml"
     log:
-        "logs/counts/moa/{library_id}.log"
+        "logs/counting/moa/{library_id}.log"
     shell:
         r"""
         mkdir -p "$(dirname {log:q})"
@@ -109,7 +109,7 @@ rule aggregate_moa_peak_counts:
         mem_mb=get_mem_mb("aggregate_moa_peak_counts"),
         runtime=get_runtime("aggregate_moa_peak_counts"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/counting/moa/aggregate_peak_counts.log"
     shell:

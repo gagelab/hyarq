@@ -485,7 +485,7 @@ rule rna_gene_qc:
         mem_mb=get_mem_mb("rna_gene_qc"),
         runtime=get_runtime("rna_gene_qc"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/reports/rna/gene_qc.log"
     shell:
@@ -529,7 +529,7 @@ rule moa_peak_qc:
         mem_mb=get_mem_mb("moa_peak_qc"),
         runtime=get_runtime("moa_peak_qc"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/reports/moa/peak_qc.log"
     shell:
@@ -574,7 +574,7 @@ rule atac_peak_qc:
         mem_mb=get_mem_mb("atac_peak_qc"),
         runtime=get_runtime("atac_peak_qc"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/reports/atac/peak_qc.log"
     shell:
@@ -619,7 +619,7 @@ rule chip_peak_qc:
         mem_mb=get_mem_mb("chip_peak_qc"),
         runtime=get_runtime("chip_peak_qc"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/reports/chip/peak_qc.log"
     shell:

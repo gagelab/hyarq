@@ -53,9 +53,9 @@ include: "rules/common.smk"
 include: "rules/reference.smk"
 include: "rules/preprocessing.smk"
 include: "rules/rna.smk"
+include: "rules/moa.smk"
 include: "rules/atac.smk"
 include: "rules/chip.smk"
-include: "rules/moa.smk"
 include: "rules/reports.smk"
 
 FINAL_TARGETS = []
@@ -105,42 +105,6 @@ if MOA_LIBRARIES:
 if ATAC_LIBRARIES:
     FINAL_TARGETS.extend(
         expand(
-            "results/qc/fastqc/raw/{library_id}",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/qc/fastqc/clean/atac/{library_id}",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/atac/{library_id}.unique.bam",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/atac/{library_id}.mapping_summary.tsv",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/atac/{library_id}.dedup.bam",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/qc/samtools/atac/{library_id}.markdup.txt",
-            library_id=ATAC_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
             "results/counts/atac/{library_id}/peak_counts.tsv",
             library_id=ATAC_LIBRARIES,
         )
@@ -157,48 +121,9 @@ if ATAC_LIBRARIES:
             "results/reports/atac/multiqc_report.html",
         ]
     )
-    FINAL_TARGETS.append(
-        "results/qc/atac/peak_pairs_validation.tsv"
-    )
     FINAL_TARGETS.extend(ATAC_PEAK_QC_OUTPUTS)
 
 if CHIP_LIBRARIES:
-    FINAL_TARGETS.extend(
-        expand(
-            "results/qc/fastqc/raw/{library_id}",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/qc/fastqc/clean/chip/{library_id}",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/chip/{library_id}.unique.bam",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/chip/{library_id}.mapping_summary.tsv",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/mapping/chip/{library_id}.dedup.bam",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
-    FINAL_TARGETS.extend(
-        expand(
-            "results/qc/samtools/chip/{library_id}.markdup.txt",
-            library_id=CHIP_LIBRARIES,
-        )
-    )
     FINAL_TARGETS.extend(
         expand(
             "results/counts/chip/{library_id}/peak_counts.tsv",
@@ -216,9 +141,6 @@ if CHIP_LIBRARIES:
             "results/counts/chip/peak_pair_count_matrix.tsv",
             "results/reports/chip/multiqc_report.html",
         ]
-    )
-    FINAL_TARGETS.append(
-        "results/qc/chip/peak_pairs_validation.tsv"
     )
     FINAL_TARGETS.extend(CHIP_PEAK_QC_OUTPUTS)
 

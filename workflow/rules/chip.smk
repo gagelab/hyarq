@@ -109,9 +109,9 @@ rule count_chip_peaks:
         mem_mb=get_mem_mb("count_chip_peaks"),
         runtime=get_runtime("count_chip_peaks"),
     conda:
-        "../envs/rna_counting.yaml"
+        "../envs/feature_counting.yaml"
     log:
-        "logs/counts/chip/{library_id}.log"
+        "logs/counting/chip/{library_id}.log"
     shell:
         r"""
         mkdir -p "$(dirname {log:q})"
@@ -147,7 +147,7 @@ rule aggregate_chip_peak_counts:
         mem_mb=get_mem_mb("aggregate_chip_peak_counts"),
         runtime=get_runtime("aggregate_chip_peak_counts"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/counting/chip/aggregate_peak_counts.log"
     shell:

@@ -109,9 +109,9 @@ rule count_atac_peaks:
         mem_mb=get_mem_mb("count_atac_peaks"),
         runtime=get_runtime("count_atac_peaks"),
     conda:
-        "../envs/rna_counting.yaml"
+        "../envs/feature_counting.yaml"
     log:
-        "logs/counts/atac/{library_id}.log"
+        "logs/counting/atac/{library_id}.log"
     shell:
         r"""
         mkdir -p "$(dirname {log:q})"
@@ -147,7 +147,7 @@ rule aggregate_atac_peak_counts:
         mem_mb=get_mem_mb("aggregate_atac_peak_counts"),
         runtime=get_runtime("aggregate_atac_peak_counts"),
     conda:
-        "../envs/rna_gene_qc.yaml"
+        "../envs/paired_feature_analysis.yaml"
     log:
         "logs/counting/atac/aggregate_peak_counts.log"
     shell:
