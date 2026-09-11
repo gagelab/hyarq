@@ -20,6 +20,14 @@ rule raw_fastqc:
         """
 
 
+def _rna_fastp_boolean_flag(option_name, flag):
+    value = config["rna"]["fastp"][option_name]
+    config_key = f"rna.fastp.{option_name}"
+    if not isinstance(value, bool):
+        raise ValueError(f"{config_key} must be a Boolean")
+    return flag if value else ""
+
+
 rule rna_fastp:
     input:
         r1=lambda wildcards: SAMPLES.loc[wildcards.library_id, "r1"],
@@ -29,6 +37,11 @@ rule rna_fastp:
         r2="results/preprocessing/rna/{library_id}/{library_id}_R2.fq.gz",
         html="results/qc/fastp/rna/{library_id}.html",
         json="results/qc/fastp/rna/{library_id}.json",
+    params:
+        detect_adapter_for_pe=lambda wildcards: _rna_fastp_boolean_flag(
+            "detect_adapter_for_pe",
+            "--detect_adapter_for_pe",
+        ),
     threads: get_threads("rna_fastp")
     resources:
         mem_mb=get_mem_mb("rna_fastp"),
@@ -45,7 +58,7 @@ rule rna_fastp:
         fastp \
             --in1 {input.r1:q} \
             --in2 {input.r2:q} \
-            --detect_adapter_for_pe \
+            {params.detect_adapter_for_pe} \
             --out1 {output.r1:q} \
             --out2 {output.r2:q} \
             --html {output.html:q} \

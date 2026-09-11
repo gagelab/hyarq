@@ -22,6 +22,7 @@ rule map_rna_star:
             "reference_id",
         ),
         outdir="results/mapping/rna",
+        win_anchor_multimap_nmax=config["rna"]["star"]["win_anchor_multimap_nmax"],
     threads: get_threads("map_rna_star")
     resources:
         mem_mb=get_mem_mb("map_rna_star"),
@@ -39,6 +40,7 @@ rule map_rna_star:
         INDEX_DIR={input.index:q} \
         OUTDIR={params.outdir:q} \
         THREADS={threads} \
+        WIN_ANCHOR_MULTIMAP_NMAX={params.win_anchor_multimap_nmax} \
         SAMPLE={params.sample:q} \
         REP={params.replicate:q} \
         LIBRARY_ID={wildcards.library_id:q} \

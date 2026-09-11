@@ -43,6 +43,7 @@ fi
 INDEX_DIR=${INDEX_DIR:-resources/references/${REFERENCE_ID}/star_index}
 OUTDIR=${OUTDIR:-results/mapping/rna}
 THREADS=${THREADS:-4}
+WIN_ANCHOR_MULTIMAP_NMAX=${WIN_ANCHOR_MULTIMAP_NMAX:-100}
 R1=${R1:-}
 R2=${R2:-}
 
@@ -87,7 +88,7 @@ echo "  prefix = $PREFIX"
     --readFilesCommand "$READ_FILES_COMMAND" \
     --outSAMmultNmax 1 \
     --outFilterMultimapNmax 1 \
-    --winAnchorMultimapNmax 100 \
+    --winAnchorMultimapNmax "$WIN_ANCHOR_MULTIMAP_NMAX" \
     --twopassMode Basic \
     --outFilterIntronMotifs RemoveNoncanonical \
     --outFilterType BySJout \
@@ -113,6 +114,7 @@ alignment_records=$("$SAMTOOLS" view -c "$BAM")
     echo -e "read_files_command\t${READ_FILES_COMMAND}"
     echo -e "out_filter_multimap_nmax\t1"
     echo -e "out_sam_mult_nmax\t1"
+    echo -e "win_anchor_multimap_nmax\t${WIN_ANCHOR_MULTIMAP_NMAX}"
     echo -e "twopass_mode\tBasic"
     echo -e "alignment_records\t${alignment_records}"
     echo -e "bam\t${BAM}"

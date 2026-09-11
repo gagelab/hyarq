@@ -20,6 +20,12 @@ moa_peak_pairs: ""
 atac_peak_pairs: ""
 chip_peak_pairs: ""
 
+rna:
+  fastp:
+    detect_adapter_for_pe: true
+  star:
+    win_anchor_multimap_nmax: 100
+
 moa:
   # MOA preprocessing and mapping defaults follow Engelhorn et al. 2025;
   # adjust them as needed for other datasets.
