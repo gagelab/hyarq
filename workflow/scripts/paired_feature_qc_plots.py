@@ -53,34 +53,6 @@ def draw_two_color_parental_fraction_histogram(
     )
 
 
-def add_parental_shift_labels(
-    ax,
-    histogram_colors,
-    parent1_label,
-    parent2_label,
-):
-    ax.text(
-        0.02,
-        0.96,
-        parent2_label,
-        color=histogram_colors[0],
-        fontsize=8,
-        ha="left",
-        va="top",
-        transform=ax.transAxes,
-    )
-    ax.text(
-        0.98,
-        0.96,
-        parent1_label,
-        color=histogram_colors[1],
-        fontsize=8,
-        ha="right",
-        va="top",
-        transform=ax.transAxes,
-    )
-
-
 def plot_parental_fraction_histogram(
     ax,
     fractions,
@@ -109,12 +81,6 @@ def plot_parental_fraction_histogram(
             transform=ax.transAxes,
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
-    add_parental_shift_labels(
-        ax,
-        histogram_colors,
-        parent1_label,
-        parent2_label,
-    )
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
     ax.set_xlabel(f"{parent1_label} count proportion")
@@ -161,12 +127,6 @@ def plot_pooled_parental_fraction_histogram(
             bbox={"facecolor": "white", "edgecolor": "none", "pad": 4},
         )
 
-    add_parental_shift_labels(
-        ax,
-        histogram_colors,
-        parent1_label,
-        parent2_label,
-    )
     ax.set_xlim(0, 1)
     ax.axvline(0.5, linestyle="--", color="black", linewidth=1)
     ax.set_xlabel(f"{parent1_label} count proportion")
@@ -415,7 +375,7 @@ def plot_paired_feature_retention(
         0.5,
         len(PAIRED_FEATURE_RETENTION_THRESHOLDS) + 0.5,
     )
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 105)
     ax.set_xticks(positions)
     ax.set_xticklabels(PAIRED_FEATURE_RETENTION_THRESHOLDS)
     ax.set_xlabel(
