@@ -1,0 +1,3 @@
+parent1_chrom	parent1_start	parent1_end	parent2_chrom	parent2_start	parent2_end
+chr1	20000	22000	chr1	20005	22005
+chr2	50000	52000	chr2	49998	51998

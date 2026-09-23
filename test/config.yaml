@@ -1,0 +1,238 @@
+# reference_id identifies one parental cross; prefixes are parental names without the trailing underscore.
+# All assays in one run must use the same two parental genome assemblies and
+# assembly versions. Prefix and FASTA values are required for all assays; GTF
+# values are required only when RNA libraries are present. MOA-, ATAC-, or
+# ChIP-only projects may leave GTF values blank.
+reference_id: "test_reference"
+
+parents:
+  parent1:
+    prefix: "P1"
+    fasta: "test/inputs/references/P1/P1.fa"
+    gtf: "test/inputs/references/P1/P1.gtf"
+  parent2:
+    prefix: "P2"
+    fasta: "test/inputs/references/P2/P2.fa"
+    gtf: "test/inputs/references/P2/P2.gtf"
+
+rna_gene_pairs: "test/inputs/paired_features/rna/gene_pairs.tsv"
+moa_peak_pairs: ""
+atac_peak_pairs: "test/inputs/paired_features/atac/atac_peak_pairs.tsv"
+chip_peak_pairs: ""
+
+moa:
+  # MOA preprocessing and mapping defaults follow Engelhorn et al. 2025;
+  # adjust them as needed for other datasets.
+  seqpurge:
+    min_len: 20
+    # qcut 0 intentionally disables quality trimming.
+    qcut: 0
+  star:
+    align_intron_max: 1
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
+
+atac:
+  fastp:
+    detect_adapter_for_pe: true
+    correction: false
+    length_required: 35
+  star:
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
+    out_bam_sorting_bins_n: 5
+
+chip:
+  fastp:
+    detect_adapter_for_pe: true
+    correction: false
+    length_required: 35
+  star:
+    out_sam_mult_nmax: 2
+    win_anchor_multimap_nmax: 100
+    out_bam_sorting_bins_n: 5
+
+# Portable per-job requirements. mem_mb is total memory for one job, and
+# runtime is in minutes. Adjust these values for your data and environment.
+# Scheduler queues, partitions, accounts, and submission settings belong in
+# execution profiles, not in this section.
+rule_resources:
+  build_concatenated_reference:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  build_concatenated_gtf:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  build_star_index:
+    threads: 8
+    mem_mb: 96000
+    runtime: 720
+  validate_rna_gene_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  validate_moa_peak_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  validate_atac_peak_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  validate_chip_peak_pairs:
+    threads: 1
+    mem_mb: 2000
+    runtime: 30
+  raw_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  rna_fastp:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  atac_fastp:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  chip_fastp:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  moa_seqpurge:
+    threads: 8
+    mem_mb: 8000
+    runtime: 240
+  moa_flash2:
+    threads: 4
+    mem_mb: 8000
+    runtime: 240
+  moa_merged_fastqc:
+    threads: 1
+    mem_mb: 4000
+    runtime: 120
+  map_moa_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
+  count_moa_peaks:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  count_atac_peaks:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  count_chip_peaks:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  aggregate_atac_peak_counts:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  aggregate_chip_peak_counts:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  rna_clean_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  atac_clean_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  chip_clean_fastqc:
+    threads: 2
+    mem_mb: 4000
+    runtime: 120
+  map_atac_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
+  map_chip_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
+  deduplicate_atac:
+    threads: 4
+    mem_mb: 16000
+    runtime: 240
+  deduplicate_chip:
+    threads: 4
+    mem_mb: 16000
+    runtime: 240
+  map_rna_star:
+    threads: 8
+    mem_mb: 64000
+    runtime: 720
+  count_rna_genes:
+    threads: 4
+    mem_mb: 16000
+    runtime: 360
+  rna_multiqc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  moa_multiqc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  rna_gene_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  moa_peak_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  atac_peak_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+  chip_peak_qc:
+    threads: 1
+    mem_mb: 8000
+    runtime: 120
+
+# Optional sample report; disabled by default.
+rna_gene_qc:
+  sample_report:
+    enabled: true
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
+moa_peak_qc:
+  sample_report:
+    enabled: false
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
+atac_peak_qc:
+  sample_report:
+    enabled: true
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
+chip_peak_qc:
+  sample_report:
+    enabled: false
+    libraries:
+      - all
+    plot_types:
+      - histogram
+      - scatter
+
+samples: "test/samples.tsv"

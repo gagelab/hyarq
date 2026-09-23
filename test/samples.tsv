@@ -1,0 +1,3 @@
+sample_id	assay	replicate	r1	r2
+test_rna	rna	1	test/inputs/fastq/test_rna_R1.fastq.gz	test/inputs/fastq/test_rna_R2.fastq.gz
+test_atac	atac	1	test/inputs/fastq/test_atac_R1.fastq.gz	test/inputs/fastq/test_atac_R2.fastq.gz

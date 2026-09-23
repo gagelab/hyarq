@@ -57,3 +57,6 @@ __pycache__/
 .conda/
 .mamba/
 /envs/
+
+# Include bundled test FASTQs.
+!test/inputs/fastq/*.fastq.gz

@@ -1,0 +1,16 @@
+chr1	synthetic	gene	10006	11505	.	+	.	gene_id "P2_GENE1";
+chr1	synthetic	transcript	10006	11505	.	+	.	gene_id "P2_GENE1"; transcript_id "P2_TX1";
+chr1	synthetic	exon	10006	10505	.	+	.	gene_id "P2_GENE1"; transcript_id "P2_TX1";
+chr1	synthetic	exon	11006	11505	.	+	.	gene_id "P2_GENE1"; transcript_id "P2_TX1";
+chr1	synthetic	gene	35006	36505	.	+	.	gene_id "P2_GENE2";
+chr1	synthetic	transcript	35006	36505	.	+	.	gene_id "P2_GENE2"; transcript_id "P2_TX2";
+chr1	synthetic	exon	35006	35505	.	+	.	gene_id "P2_GENE2"; transcript_id "P2_TX2";
+chr1	synthetic	exon	36006	36505	.	+	.	gene_id "P2_GENE2"; transcript_id "P2_TX2";
+chr2	synthetic	gene	10006	11505	.	+	.	gene_id "P2_GENE3";
+chr2	synthetic	transcript	10006	11505	.	+	.	gene_id "P2_GENE3"; transcript_id "P2_TX3";
+chr2	synthetic	exon	10006	10505	.	+	.	gene_id "P2_GENE3"; transcript_id "P2_TX3";
+chr2	synthetic	exon	11006	11505	.	+	.	gene_id "P2_GENE3"; transcript_id "P2_TX3";
+chr2	synthetic	gene	35006	36505	.	+	.	gene_id "P2_GENE4";
+chr2	synthetic	transcript	35006	36505	.	+	.	gene_id "P2_GENE4"; transcript_id "P2_TX4";
+chr2	synthetic	exon	35006	35505	.	+	.	gene_id "P2_GENE4"; transcript_id "P2_TX4";
+chr2	synthetic	exon	36006	36505	.	+	.	gene_id "P2_GENE4"; transcript_id "P2_TX4";
