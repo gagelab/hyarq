@@ -1,0 +1,11 @@
+name: hyarq
+
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+
+dependencies:
+  - python=3.12.13
+  - snakemake=9.23.1
+  - snakemake-executor-plugin-cluster-generic=1.0.9
