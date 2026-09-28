@@ -13,7 +13,7 @@ starts = {
     "moa": (25_000, 60_000),
     "chip": (30_000, 70_000),
 }
-lengths = {"gene": 1500, "atac": 2000, "moa": 80, "chip": 400}
+lengths = {"gene": 1500, "atac": 500, "moa": 80, "chip": 400}
 features = {
     assay: [(chrom, start, start + lengths[assay])
             for chrom in chromosomes for start in positions]
