@@ -2,7 +2,7 @@
   <img src="docs/images/logo.png" width="500"/>
 </p>
 
-# HyARQ
+# HyARQ: a Snakemake workflow for allele-specific read counting and quality control in F1 hybrids
 
 ---
 
