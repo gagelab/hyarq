@@ -28,7 +28,7 @@
 
 HyARQ is a Snakemake workflow for allele-specific read counting and quality control in F1 hybrids. It supports RNA-seq, MOA-seq, ATAC-seq, and ChIP-seq data and provides a common framework for preprocessing, mapping to concatenated parental genomes, counting reads over paired parental features, and generating assay-specific quality control outputs.
 
-HyARQ requires two parental reference genomes and user-supplied paired features defining corresponding genes or regulatory regions between the parental genomes. The workflow does not generate paired features.
+HyARQ requires paired-end FASTQ sample files, two parental reference genomes, and user-supplied paired features defining corresponding genes or regulatory regions between the parental genomes.
 
 ## Workflow overview
 
