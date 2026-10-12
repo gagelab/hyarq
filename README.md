@@ -2,32 +2,43 @@
   <img src="docs/images/logo.png" width="500"/>
 </p>
 
-## Hybrid Allele-specific Read Quantification
+# HyARQ
 
-A Snakemake workflow for allele-specific read counting and quality control in plant and other hybrids. It builds a two-haplotype concatenated reference and maps RNA-seq, ATAC-seq, ChIP-seq, or MOA-seq to generate allele counts with reduced mapping bias and built-in QC visualizations. This pipeline can be used to study allele-specific expression, cis-regulatory variation, and heterosis where two parental genomes are available.
+HyARQ is a Snakemake workflow for allele-specific read counting and quality control in F1 hybrids. It supports RNA-seq, MOA-seq, ATAC-seq, and ChIP-seq data and provides a common framework for preprocessing, mapping to concatenated parental genomes, counting reads over paired parental features, and generating assay-specific quality control outputs.
 
-## Workflow
+HyARQ requires two parental reference genomes and user-supplied paired features defining corresponding genes or regulatory regions between the parental genomes. The workflow does not generate paired features.
+
+## Workflow overview
 
 <p align="center">
   <img src="docs/images/workflow.png" width="900"/>
 </p>
 
-## Main Elements
+## Supported assays
 
-- Supports RNA-seq, ATAC-seq, ChIP-seq, or MOA-seq data
-- Uses Snakemake, a Python-based workflow management tool
-- Generates informative QC plots to visualize parental imbalance, count thresholds, and outliers
+| Assay | Quantified feature | Required paired feature input |
+| --- | --- | --- |
+| RNA-seq | Genes | Paired parental genes |
+| MOA-seq | Peak regions | Paired parental peak regions |
+| ATAC-seq | Peak regions | Paired parental peak regions |
+| ChIP-seq | Peak regions | Paired parental peak regions |
 
-## Installation and Usage
+## Quick start
 
-#### Clone the repository
-```bash
-git clone https://github.com/gagelab/HyARQ.git
-cd HyARQ
-```
-#### Create the Conda environment 
+For complete installation and usage instructions, including input preparation, configuration, local and Slurm execution, and the bundled test dataset, see `docs/HYARQ_quickstart.md`.
 
-#### Required inputs
-1. config.yaml
-2. samples.tsv
-3. Reference inputs
+## Inputs
+
+HyARQ is configured using `config/config.yaml` and `config/samples.tsv`. Analyses require paired-end FASTQ files, two parental genome assemblies in FASTA format, and user-supplied paired features. Parental GTF annotations are additionally required for RNA-seq.
+
+## Main outputs
+
+HyARQ generates per-library parental feature counts, assay-wide paired feature count matrices, mapping summaries, MultiQC reports, and assay-specific quality control summaries and reports. Outputs are written under the `results/` directory.
+
+## Test dataset
+
+A small test dataset containing one RNA-seq library and one ATAC-seq library is provided under `test/`. It can be used to verify the HyARQ installation and workflow before analyzing user data.
+
+## License
+
+HyARQ is released under the MIT License. See `LICENSE` for details.
