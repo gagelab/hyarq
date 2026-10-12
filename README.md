@@ -4,6 +4,28 @@
 
 # HyARQ
 
+---
+
+## TABLE OF CONTENTS
+
+- [Introduction](#introduction)
+- [Workflow overview](#workflow-overview)
+- [Supported assays](#supported-assays)
+- [Quick start](#quick-start)
+  - [Installation](#installation)
+  - [Inputs](#inputs)
+  - [Configuration](#configuration)
+  - [Running HyARQ](#running-hyarq)
+- [Main outputs](#main-outputs)
+- [Test dataset](#test-dataset)
+- [Citation](#citation)
+- [License](#license)
+- [Questions](#questions)
+
+---
+
+## Introduction
+
 HyARQ is a Snakemake workflow for allele-specific read counting and quality control in F1 hybrids. It supports RNA-seq, MOA-seq, ATAC-seq, and ChIP-seq data and provides a common framework for preprocessing, mapping to concatenated parental genomes, counting reads over paired parental features, and generating assay-specific quality control outputs.
 
 HyARQ requires two parental reference genomes and user-supplied paired features defining corresponding genes or regulatory regions between the parental genomes. The workflow does not generate paired features.
@@ -23,7 +45,9 @@ HyARQ requires two parental reference genomes and user-supplied paired features 
 | ATAC-seq | Peak regions | Paired parental peak regions |
 | ChIP-seq | Peak regions | Paired parental peak regions |
 
-## Installation
+## Quick start
+
+### Installation
 
 Clone the repository and create the HyARQ Conda environment:
 
@@ -36,7 +60,7 @@ conda activate hyarq
 
 Software required by individual workflow rules is installed automatically in separate Conda environments when the workflow is run.
 
-## Inputs
+### Inputs
 
 HyARQ requires paired-end FASTQ files and two parental reference genomes in FASTA format. RNA-seq additionally requires a GTF annotation for each parental genome.
 
@@ -68,7 +92,7 @@ sample2	atac	1	path/to/sample2_R1.fastq.gz	path/to/sample2_R2.fastq.gz
 
 The `assay` column must be one of `rna`, `moa`, `atac`, or `chip`.
 
-## Configuration
+### Configuration
 
 Edit `config/config.yaml` to specify the parental references, paired feature files, and sample table. The main fields to edit are:
 
@@ -95,7 +119,7 @@ samples: config/samples.tsv
 
 GTF files are required only when RNA-seq samples are included. Paired feature paths are required only for the corresponding assays being analyzed. Assay-specific parameters and computational resource settings can also be adjusted in `config/config.yaml`.
 
-## Running HyARQ
+### Running HyARQ
 
 HyARQ includes profiles for local execution and Slurm clusters.
 
@@ -189,6 +213,18 @@ snakemake --snakefile workflow/Snakefile \
 
 The test workflow writes to the standard `results/` directory, so it is best run in a clean clone or before running HyARQ on user data.
 
+---
+
+## Citation
+
+---
+
 ## License
 
 HyARQ is released under the MIT License. See `LICENSE` for details.
+
+---
+
+## Questions?
+
+Please leave any feedback, issue, or question in the [Issues section](https://github.com/gagelab/hyarq/issues).
