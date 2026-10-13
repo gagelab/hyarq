@@ -121,9 +121,11 @@ GTF files are required only when RNA-seq samples are included. Paired feature pa
 
 ### Running HyARQ
 
-HyARQ includes profiles for local execution and Slurm clusters.
+HyARQ can be run locally or on an HPC cluster using Snakemake execution profiles. The repository includes a local profile and a Slurm profile used during workflow validation. Users of other job schedulers can configure an appropriate Snakemake profile for their cluster.
 
-For local execution, first perform a dry run:
+#### Local execution
+
+First perform a dry run:
 
 ```bash
 snakemake --snakefile workflow/Snakefile \
@@ -141,7 +143,9 @@ snakemake --snakefile workflow/Snakefile \
   all
 ```
 
-For Slurm execution, copy the supplied profile template and edit the cluster-specific account, partition, and QOS settings as needed:
+#### HPC execution
+
+A Slurm profile template is provided in `profiles/slurm/config.yaml.template`. To run HyARQ on a Slurm cluster, copy the template and edit the cluster-specific account, partition, and QOS settings as needed:
 
 ```bash
 cp profiles/slurm/config.yaml.template profiles/slurm/config.yaml
