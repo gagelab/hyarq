@@ -246,9 +246,9 @@ def main():
     for row in evaluations:
         formatted = {key: row[key] for key in ("assay", "replicate", "feature_index")}
         for target, source, scale, precision in (
-            ("expected_parent1_fraction", "expected_parent1_fraction", 1, 3),
-            ("observed_parent1_fraction", "observed_parent1_fraction", 1, 3),
-            ("absolute_fraction_error_pp", "absolute_fraction_error", 100, 2),
+            ("expected_parent1_fraction", "expected_parent1_fraction", 1, 4),
+            ("observed_parent1_fraction", "observed_parent1_fraction", 1, 4),
+            ("absolute_fraction_error", "absolute_fraction_error", 1, 4),
             ("recovery_percent", "recovery", 100, 2),
             ("retention_parent1_percent", "retention_parent1", 100, 2),
             ("retention_parent2_percent", "retention_parent2", 100, 2),
